@@ -1,0 +1,277 @@
+# Every piece of text the UI can show lives here, and nowhere else.
+#
+# Two rules make this useful rather than just indirection:
+#
+#   1. Translating or rewording the app is an edit to this file plus a
+#      restart. No HTML or JS changes, no rebuild.
+#   2. A key that is missing or empty ("") hides its element entirely. That
+#      is how you turn a label, a button, or a whole section off without
+#      touching the markup -- set it to "" and it disappears rather than
+#      rendering blank or showing a raw key name.
+#
+# This file is served to any visitor at /api/language, signed in or not, since
+# the signed-out page needs text too. Never put anything secret in it.
+
+app:
+  title: "Sudoku"
+  tagline: "Sign in with a one-time link to keep your games and stats on every device."
+
+account_page:
+  title: "Sudoku · Account"
+
+nav:
+  sign_in: "Sign in"
+  account_signed_in: "Account: {name}"
+  back_to_game: "← Back to the game"
+
+signed_out:
+  heading: "You are not signed in"
+  body: "You can still play -- your games and stats stay in this browser. There is no signup form on purpose: ask an admin for a one-time login link to keep them on every device."
+  invalid_link: "That login link is invalid, expired, or has already been used. Ask for a new one."
+
+account:
+  heading: "Account"
+  display_name_label: "Display name"
+  display_name_placeholder: "Your name"
+  save_button: "Save"
+  saved_notice: "Saved."
+  logout_button: "Log out"
+
+admin:
+  heading: "Admin"
+  description: "Create an account by minting a login link. Send the link to the person; it works once."
+  new_name_label: "Name"
+  new_name_placeholder: "Their name"
+  new_role_label: "Role"
+  role_user: "user"
+  role_admin: "admin"
+  create_button: "Create login link"
+  link_notice: "Send this one-time link. It is shown once and cannot be recovered."
+  copy_button: "Copy"
+  copied_notice: "Copied."
+  table_name: "Name"
+  table_role: "Role"
+  table_status: "Status"
+  table_actions: "Actions"
+  status_active: "active"
+  status_disabled: "disabled"
+  reissue_button: "New link"
+  disable_button: "Disable"
+  enable_button: "Enable"
+
+api_keys:
+  heading: "API keys"
+  description: "For scripts, cron jobs, and other services. A key does exactly what your account can do -- send it as an Authorization: Bearer header. It is shown once."
+  name_label: "What is it for"
+  name_placeholder: "deploy bot"
+  role_label: "Permission"
+  role_user: "user"
+  role_admin: "admin (can manage accounts)"
+  days_label: "Expires in (days)"
+  days_placeholder: "leave blank for the default, 0 for never"
+  create_button: "Create key"
+  secret_notice: "Copy this now. It is shown once and cannot be recovered -- if you lose it, revoke the key and create another."
+  copy_button: "Copy"
+  copied_notice: "Copied."
+  table_name: "Name"
+  table_role: "Permission"
+  table_status: "Status"
+  table_last_used: "Last used"
+  table_expires: "Expires"
+  table_actions: "Actions"
+  status_active: "active"
+  status_revoked: "revoked"
+  status_expired: "expired"
+  never: "never"
+  revoke_button: "Revoke"
+  # Empty this string to stop asking for confirmation before revoking.
+  revoke_confirm: "Revoke this key? Anything using it stops working immediately."
+
+admin_keys:
+  heading: "All API keys"
+  description: "Every key in this app and who owns it. Revoke one to cut off whatever is using it, right away."
+  table_owner: "Owner"
+
+errors:
+  generic: "Something went wrong. Please try again."
+  network: "Could not reach the server."
+
+# ---------------------------------------------------------------------------
+# The game page. {placeholders} are filled in by I18n.format.
+# ---------------------------------------------------------------------------
+
+game:
+  difficulty_easy: "Easy"
+  difficulty_medium: "Medium"
+  difficulty_hard: "Hard"
+  difficulty_expert: "Expert"
+  kind_daily: "Daily"
+  kind_random: "Random"
+  label_daily: "Daily puzzle · {date}"
+  label_random: "Random puzzle"
+  board_label: "Sudoku board"
+  cell_label: "Row {row}, column {col}, empty"
+  cell_label_value: "Row {row}, column {col}, {value}"
+  mode_group_label: "Entry mode"
+  mode_normal: "Normal"
+  mode_candidate: "Candidate"
+  digit_label: "Enter {digit}"
+  candidate_label: "Pencil in {digit}"
+  erase: "Erase"
+  undo: "Undo"
+  auto_candidate: "Auto Candidate Mode"
+  # Desktop only. Empty this to hide the tip.
+  space_hint: "Tip: press Space to switch between Normal and Candidate."
+  errors_label: "Mistakes:"
+  pause: "Pause"
+  paused: "Paused"
+  resume: "Resume"
+  generating: "Making your puzzle…"
+  generate_failed: "Could not make a puzzle. Please try again."
+  not_quite_right: "Not quite right -- something on the board is wrong."
+  revealed_notice: "Puzzle revealed."
+  select_cell_first: "Select a cell first."
+  check_cell_none: "Select a cell to check it."
+  check_cell_empty: "That cell is empty."
+  check_cell_correct: "That cell is correct."
+  check_cell_wrong: "That cell is wrong."
+  check_all_correct: "Everything so far is correct."
+  check_found_mistakes: "Mistakes found: {count}."
+  link_copied: "Link copied -- anyone who opens it gets this puzzle."
+  bad_link: "That link isn't a puzzle this site can open."
+  resize_board: "Drag to resize · double-click to reset"
+  top_edge_hint: "Move the pointer to the top of the window for the menu."
+
+menu:
+  more: "More options"
+  hint: "Hint"
+  check_cell: "Check Cell"
+  check_puzzle: "Check Puzzle"
+  reveal_cell: "Reveal Cell"
+  reveal_puzzle: "Reveal Puzzle"
+  reset_puzzle: "Reset Puzzle"
+  new_game: "New Game"
+  print: "Print"
+  share: "Copy Link"
+  fullscreen: "Fullscreen"
+  exit_fullscreen: "Exit fullscreen"
+  help: "How to play"
+  stats: "Statistics"
+  settings: "Settings"
+  confirm_cancel: "Cancel"
+  confirm_reveal: "Reveal the whole puzzle? This ends the game, and it won't count as solved."
+  reveal_yes: "Reveal"
+  confirm_reset: "Reset this puzzle? Your numbers, candidates, mistakes, and time will be cleared."
+  reset_yes: "Reset"
+
+new_game:
+  heading: "New Game"
+  daily_heading: "Today's puzzles"
+  daily_description: "The same four puzzles for everyone today."
+  random_heading: "Random puzzle"
+  random_description: "A fresh puzzle every time."
+  badge_solved: "✓ Solved"
+  badge_revealed: "Revealed"
+  badge_in_progress: "In progress"
+  close: "Back to my puzzle"
+
+settings:
+  heading: "Settings"
+  gameboard: "Gameboard settings"
+  appearance: "Appearance"
+  check_guesses: "Check guesses when entered"
+  start_auto_candidate: "Start in auto candidate mode"
+  show_error_counter: "Show error counter"
+  show_timer: "Show timer"
+  highlight_conflicts: "Highlight conflicts"
+  highlight_row_col: "Highlight row and column"
+  highlight_box: "Highlight box"
+  highlight_identical: "Highlight identical numbers"
+  sound_on_solve: "Play sound on solve"
+  dark_mode: "Dark mode"
+  board_only: "Show only the board (desktop)"
+  close: "Done"
+
+help:
+  heading: "How to play"
+  rules: "Fill the grid so that every row, every column, and every 3×3 box contains the numbers 1 to 9 exactly once."
+  modes: "Normal mode places a number. Candidate mode pencils in small numbers that might fit -- press one again to remove it."
+  auto: "Auto Candidate Mode fills in every possible candidate for you and keeps them up to date as you play. You can still cross candidates out."
+  menu: "Stuck? The ⋯ menu has a hint, checks, and reveals."
+  layout: "On a computer, drag the board's bottom-right corner to resize it (double-click it to reset), and the fullscreen button shows just the board and number pad. The address bar always links to the puzzle you are playing -- copy it to share."
+  sync: "Your games are saved as you play. Sign in to pick them up on another device."
+  keyboard_heading: "Keyboard"
+  key_space: "Space"
+  does_space: "Switch between Normal and Candidate"
+  key_digits: "1 – 9"
+  does_digits: "Enter a number"
+  key_shift_digits: "Shift + 1 – 9"
+  does_shift_digits: "Enter it in the other mode, just this once"
+  key_arrows: "Arrow keys"
+  does_arrows: "Move around the board"
+  key_erase: "Backspace, Delete, 0"
+  does_erase: "Erase"
+  key_undo: "Ctrl / ⌘ + Z"
+  does_undo: "Undo"
+  key_hint: "H"
+  does_hint: "Hint"
+  key_escape: "Esc"
+  does_escape: "Close menus and dialogs"
+  close: "Got it"
+
+hints:
+  mistake: "There's a mistake in the highlighted cell."
+  naked_single: "Row {row}, column {col}: only one number can go here."
+  hidden_single_row: "In row {row}, there's only one place the {digit} can go."
+  hidden_single_col: "In column {col}, there's only one place the {digit} can go."
+  hidden_single_box: "In this box, there's only one place the {digit} can go."
+  via: "Look for {techniques} first."
+  none: "No simple next step found. Try Check Puzzle."
+  joiner: ", then "
+  technique:
+    pointing: "a pointing pair"
+    claiming: "a box/line reduction"
+    naked_pair: "a naked pair"
+    hidden_pair: "a hidden pair"
+    naked_triple: "a naked triple"
+    hidden_triple: "a hidden triple"
+    x_wing: "an X-Wing"
+    xy_wing: "an XY-Wing"
+    xyz_wing: "an XYZ-Wing"
+    swordfish: "a Swordfish"
+    simple_coloring: "a coloring chain"
+    finned_x_wing: "a finned X-Wing"
+    w_wing: "a W-Wing"
+    unique_rectangle: "a unique rectangle"
+    naked_quad: "a naked quad"
+    hidden_quad: "a hidden quad"
+    xy_chain: "an XY-Chain"
+
+stats:
+  heading: "Statistics"
+  played: "Played"
+  solved: "Solved"
+  solve_rate: "Solve rate"
+  percent: "{value}%"
+  best_time: "Best time"
+  average_time: "Average time"
+  current_streak: "Daily streak"
+  best_streak: "Best daily streak"
+  empty_value: "--"
+  recent: "Recent games"
+  none: "No finished games yet."
+  recent_row: "{kind} · {date} · {outcome} · {time}"
+  outcome_solved: "Solved"
+  outcome_revealed: "Revealed"
+  signed_out_note: "These stats live in this browser. Sign in to keep them on every device."
+  close: "Close"
+
+solved:
+  heading: "Solved!"
+  summary: "{difficulty} in {time}."
+  details: "Mistakes: {errors} · Hints: {hints}"
+  stats: "See stats"
+  new_game: "New game"
+
+print:
+  heading: "Sudoku · {difficulty} · {label}"

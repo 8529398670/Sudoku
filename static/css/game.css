@@ -1,0 +1,837 @@
+/*
+  The game page. Loaded after style.css, which supplies the base tokens
+  (--fg, --bg, --border, --accent...) and element defaults this file builds
+  on or overrides.
+
+  Mobile-first like style.css: the base rules are a phone -- board full
+  width, controls stacked beneath it, the number pad one row of nine. The
+  48rem block puts the controls beside the board with a 3x3 pad, the way
+  the reference screenshots lay it out on a desktop.
+
+  Every board colour is a token, so the dark theme is a list of values,
+  not a second set of rules.
+*/
+
+:root {
+  --board-size: min( calc( 100vw - 16px ) , 62vh , 36rem );
+
+  --board-edge: #121212;
+  --box-line: #8e8e8e;
+  --cell-line: #cdcdcd;
+  --cell-bg: #ffffff;
+  --given-bg: #e3e3e3;
+  --given-fg: #121212;
+  --entered-fg: #2860d8;
+  --revealed-fg: #7a52c7;
+  --wrong-fg: #d0312d;
+  --wrong-tint: rgba( 208 , 49 , 45 , 0.16 );
+  --conflict-tint: rgba( 208 , 49 , 45 , 0.12 );
+  --peer-bg: #fbeecb;
+  --peer-given-bg: #d9cba8;
+  --same-bg: #ffc768;
+  --same-given-bg: #e9972a;
+  --selected-bg: #ff9d0a;
+  --hint-ring: #2860d8;
+  --note-fg: #6a6a6a;
+
+  --key-bg: #e2e2e2;
+  --key-fg: #121212;
+  --key-border: #d2d2d2;
+  --key-done-fg: #a6a6a6;
+  --toggle-bg: #ffffff;
+  --toggle-fg: #555555;
+  --toggle-on-bg: #121212;
+  --toggle-on-fg: #ffffff;
+  --hover: rgba( 0 , 0 , 0 , 0.06 );
+  --overlay-bg: rgba( 255 , 255 , 255 , 0.92 );
+  --toast-bg: #121212;
+  --toast-fg: #ffffff;
+  --shadow: 0 10px 30px rgba( 0 , 0 , 0 , 0.18 );
+}
+
+[data-theme="dark"] {
+  --board-edge: #d6d6d6;
+  --box-line: #7a7f87;
+  --cell-line: #353a42;
+  --cell-bg: #191c21;
+  --given-bg: #2b3037;
+  --given-fg: #f1f1f1;
+  --entered-fg: #7eaaff;
+  --revealed-fg: #c4a6ff;
+  --wrong-fg: #ff8b80;
+  --wrong-tint: rgba( 255 , 110 , 100 , 0.18 );
+  --conflict-tint: rgba( 255 , 110 , 100 , 0.14 );
+  --peer-bg: #373020;
+  --peer-given-bg: #4a412b;
+  --same-bg: #7a5414;
+  --same-given-bg: #94600f;
+  --selected-bg: #c66f00;
+  --hint-ring: #7eaaff;
+  --note-fg: #a2a9b3;
+
+  --key-bg: #2b3037;
+  --key-fg: #f1f1f1;
+  --key-border: #3a4048;
+  --key-done-fg: #6b7079;
+  --toggle-bg: #191c21;
+  --toggle-fg: #a2a9b3;
+  --toggle-on-bg: #f1f1f1;
+  --toggle-on-fg: #121212;
+  --hover: rgba( 255 , 255 , 255 , 0.08 );
+  --overlay-bg: rgba( 25 , 28 , 33 , 0.94 );
+  --toast-bg: #f1f1f1;
+  --toast-fg: #121212;
+  --shadow: 0 10px 30px rgba( 0 , 0 , 0 , 0.5 );
+}
+
+/* An author display rule (flex, grid) beats the hidden attribute's built-in
+   display:none, so state it once with the force it needs. */
+[hidden] { display: none !important; }
+
+body.game-page {
+  background: var( --cell-bg );
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+#error-banner { margin: 1rem; }
+
+.game-app {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 8px env( safe-area-inset-bottom );
+}
+
+/* --- header ---------------------------------------------------------------- */
+
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var( --border );
+}
+
+.title-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 44px;
+  padding: 0.25rem 0.35rem;
+  color: var( --fg );
+  background: transparent;
+  border: none;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.title-button:hover { background: var( --hover ); }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  color: var( --fg );
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+}
+
+.icon-button:hover { background: var( --hover ); }
+.icon-button-small { min-width: 32px; min-height: 32px; }
+#account-link.signed-in { color: var( --accent ); }
+
+.icon {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon .dot { fill: currentColor; stroke: none; }
+.icon-small { width: 18px; height: 18px; }
+
+.text-button {
+  min-height: 40px;
+  padding: 0 0.6rem;
+  color: var( --fg );
+  background: transparent;
+  border: none;
+  font-weight: 600;
+}
+
+.text-button:hover { background: var( --hover ); }
+
+/* Shown only once there is room -- see the 48rem block. */
+.wide-only { display: none; }
+
+.menu-wrap { position: relative; }
+
+.menu {
+  position: absolute;
+  top: calc( 100% + 4px );
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  padding: 0.3rem 0;
+  background: var( --card-bg );
+  border: 1px solid var( --border );
+  border-radius: 10px;
+  box-shadow: var( --shadow );
+}
+
+.menu button {
+  min-height: 42px;
+  padding: 0.55rem 1rem;
+  color: var( --fg );
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  font-weight: 500;
+}
+
+.menu button:hover, .menu button:focus-visible { background: var( --hover ); }
+.menu hr { margin: 0.3rem 0; border: none; border-top: 1px solid var( --border ); }
+
+/* --- status bar ------------------------------------------------------------ */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 40px;
+  font-size: 0.9rem;
+  color: var( --fg-muted );
+}
+
+.game-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error-counter { white-space: nowrap; }
+.error-count { font-weight: 700; color: var( --wrong-fg ); }
+
+.timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  color: var( --fg );
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- layout ---------------------------------------------------------------- */
+
+/* Undoes style.css's centred-column <main>: this page lays out its own. */
+main.game-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 1.25rem;
+}
+
+/* --- board ----------------------------------------------------------------- */
+
+.board-wrap {
+  position: relative;
+  width: var( --board-size );
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat( 9 , 1fr );
+  grid-template-rows: repeat( 9 , 1fr );
+  width: var( --board-size );
+  height: var( --board-size );
+  background: var( --cell-bg );
+  border: 3px solid var( --board-edge );
+  font-size: calc( var( --board-size ) / 9 * 0.6 );
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.board:focus-visible { outline: 2px solid var( --accent ); outline-offset: 3px; }
+
+.board-row { display: contents; }
+
+.cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var( --cell-bg );
+  border-right: 1px solid var( --cell-line );
+  border-bottom: 1px solid var( --cell-line );
+  cursor: pointer;
+}
+
+.board-row .cell:last-child { border-right: none; }
+.board-row:last-child .cell { border-bottom: none; }
+.cell.edge-right { border-right: 3px solid var( --box-line ); }
+.cell.edge-bottom { border-bottom: 3px solid var( --box-line ); }
+
+.cell .value { line-height: 1; font-weight: 500; }
+
+.cell.given { background: var( --given-bg ); color: var( --given-fg ); }
+.cell.given .value { font-weight: 700; }
+.cell.entered { color: var( --entered-fg ); }
+.cell.revealed { color: var( --revealed-fg ); }
+
+/* Highlights, weakest first so the stronger ones win. */
+.cell.peer { background: var( --peer-bg ); }
+.cell.given.peer { background: var( --peer-given-bg ); }
+.cell.same { background: var( --same-bg ); }
+.cell.given.same { background: var( --same-given-bg ); }
+.cell.selected { background: var( --selected-bg ); }
+
+/* Tints layer over whatever highlight the cell already has. */
+.cell.conflict { background-image: linear-gradient( var( --conflict-tint ) , var( --conflict-tint ) ); }
+.cell.conflict .value { color: var( --wrong-fg ); }
+.cell.wrong { background-image: linear-gradient( var( --wrong-tint ) , var( --wrong-tint ) ); }
+.cell.wrong .value { color: var( --wrong-fg ); }
+.cell.hint { box-shadow: inset 0 0 0 3px var( --hint-ring ); }
+
+.notes {
+  position: absolute;
+  inset: 1px;
+  display: grid;
+  grid-template-columns: repeat( 3 , 1fr );
+  grid-template-rows: repeat( 3 , 1fr );
+  color: var( --note-fg );
+  font-size: calc( var( --board-size ) / 9 * 0.26 );
+  line-height: 1;
+  pointer-events: none;
+}
+
+.note {
+  display: grid;
+  place-items: center;
+  visibility: hidden;
+  border-radius: 3px;
+}
+
+.note.on { visibility: visible; }
+.cell.selected .notes { color: var( --given-fg ); }
+.note.match { background: var( --same-bg ); color: var( --given-fg ); font-weight: 700; }
+
+.is-paused .board .value,
+.is-paused .board .notes { visibility: hidden; }
+
+.board-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: var( --overlay-bg );
+  font-weight: 700;
+  text-align: center;
+}
+
+.board-overlay p { margin: 0; }
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var( --border );
+  border-top-color: var( --fg );
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate( 360deg ); } }
+
+@media ( prefers-reduced-motion: reduce ) {
+  .spinner { animation-duration: 3s; }
+}
+
+.print-heading { display: none; }
+
+/* The resize grip and the fullscreen button are desktop tools (layout.js);
+   the 48rem block shows them. */
+#fullscreen-button,
+.board-resize { display: none; }
+
+#fullscreen-button .icon-exit,
+.is-fullscreen #fullscreen-button .icon-enter { display: none; }
+.is-fullscreen #fullscreen-button .icon-exit { display: inline; }
+
+/* Sits just off the board's corner, so it never covers the last cell. */
+.board-resize {
+  position: absolute;
+  right: -18px;
+  bottom: -18px;
+  z-index: 6;
+  width: 22px;
+  height: 22px;
+  color: var( --box-line );
+  cursor: nwse-resize;
+  touch-action: none;
+  opacity: 0.6;
+}
+
+.board-resize svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.board-resize:hover,
+.is-resizing .board-resize { color: var( --fg ); opacity: 1; }
+.is-resizing { cursor: nwse-resize; user-select: none; -webkit-user-select: none; }
+
+/* --- controls -------------------------------------------------------------- */
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: var( --board-size );
+}
+
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  border: 1px solid var( --key-border );
+  border-radius: 8px;
+}
+
+.mode-toggle button {
+  min-height: 40px;
+  padding: 0.3rem;
+  color: var( --toggle-fg );
+  background: var( --toggle-bg );
+  border: none;
+  border-radius: 0;
+  font-weight: 500;
+}
+
+.mode-toggle button[aria-checked="true"] {
+  color: var( --toggle-on-fg );
+  background: var( --toggle-on-bg );
+  font-weight: 600;
+}
+
+.number-pad {
+  display: grid;
+  grid-template-columns: repeat( 9 , 1fr );
+  gap: 4px;
+}
+
+.pad-key {
+  position: relative;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0;
+  color: var( --key-fg );
+  background: var( --key-bg );
+  border: 1px solid var( --key-border );
+  border-radius: 6px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  touch-action: manipulation;
+}
+
+.pad-key:active:not( :disabled ) { filter: brightness( 0.92 ); }
+.pad-key.done { color: var( --key-done-fg ); font-weight: 400; }
+
+.pad-small {
+  display: none;
+  position: absolute;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.candidate-mode .pad-big { display: none; }
+.candidate-mode .pad-small { display: block; }
+
+/* Each digit sits where its pencil mark would in a cell. */
+.pad-pos-1 { top: 4px; left: 5px; }
+.pad-pos-2 { top: 4px; left: 50%; transform: translateX( -50% ); }
+.pad-pos-3 { top: 4px; right: 5px; }
+.pad-pos-4 { top: 50%; left: 5px; transform: translateY( -50% ); }
+.pad-pos-5 { top: 50%; left: 50%; transform: translate( -50% , -50% ); }
+.pad-pos-6 { top: 50%; right: 5px; transform: translateY( -50% ); }
+.pad-pos-7 { bottom: 4px; left: 5px; }
+.pad-pos-8 { bottom: 4px; left: 50%; transform: translateX( -50% ); }
+.pad-pos-9 { bottom: 4px; right: 5px; }
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.action-button {
+  display: inline-grid;
+  place-items: center;
+  min-height: 46px;
+  color: var( --key-fg );
+  background: var( --key-bg );
+  border: 1px solid var( --key-border );
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.game-page button:disabled { opacity: 0.45; cursor: default; }
+
+/* style.css styles <label> as a small muted form caption and <input> as a
+   full-width text box; neither suits a checkbox row. */
+.game-page .check-row,
+.game-page .setting-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var( --fg );
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.game-page input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var( --accent );
+}
+
+.key-hint { margin: 0; color: var( --fg-muted ); font-size: 0.8rem; }
+
+/* --- dialogs --------------------------------------------------------------- */
+
+dialog.sheet {
+  width: min( 32rem , calc( 100vw - 1.5rem ) );
+  max-height: calc( 100dvh - 2rem );
+  padding: 1.25rem;
+  color: var( --fg );
+  background: var( --card-bg );
+  border: none;
+  border-radius: 14px;
+  box-shadow: var( --shadow );
+}
+
+dialog.sheet::backdrop { background: rgba( 0 , 0 , 0 , 0.45 ); }
+
+.dialog-title,
+#new-game-dialog h2 {
+  margin: 0 0 0.75rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.section-label {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.game-page button.danger { background: var( --wrong-fg ); color: #ffffff; }
+
+.settings-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var( --border ); }
+.settings-list li { border-bottom: 1px solid var( --border ); }
+.setting-row { min-height: 44px; }
+
+.option-group h3 { margin: 1rem 0 0.2rem; font-size: 1rem; }
+.option-group p { margin: 0 0 0.5rem; }
+
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat( 2 , 1fr );
+  gap: 0.5rem;
+}
+
+.difficulty-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: 64px;
+  color: var( --key-fg );
+  background: var( --key-bg );
+  border: 1px solid var( --key-border );
+  border-radius: 10px;
+}
+
+.difficulty-option:hover { filter: brightness( 0.96 ); }
+.option-name { font-size: 1rem; font-weight: 700; }
+.option-badge { min-height: 1em; color: var( --fg-muted ); font-size: 0.75rem; font-weight: 600; }
+.difficulty-option[data-state="solved"] .option-badge { color: var( --ok-fg ); }
+.difficulty-option[data-state="playing"] .option-badge { color: var( --accent ); }
+
+.shortcuts { margin: 0; }
+
+.shortcuts div {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var( --border );
+  font-size: 0.9rem;
+}
+
+.shortcuts dt { flex: 0 0 9.5rem; }
+.shortcuts dd { margin: 0; }
+
+kbd {
+  padding: 0.1rem 0.4rem;
+  background: var( --key-bg );
+  border: 1px solid var( --key-border );
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.stats-tabs {
+  display: grid;
+  grid-template-columns: repeat( 4 , 1fr );
+  gap: 4px;
+  margin-bottom: 1rem;
+}
+
+.stats-tab {
+  min-height: 40px;
+  padding: 0.25rem;
+  color: var( --key-fg );
+  background: var( --key-bg );
+  border: 1px solid var( --key-border );
+  font-size: 0.9rem;
+}
+
+.stats-tab[aria-selected="true"] { color: var( --toggle-on-fg ); background: var( --toggle-on-bg ); }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat( auto-fill , minmax( 6.5rem , 1fr ) );
+  gap: 0.75rem;
+  margin: 0;
+}
+
+/* The <dl> needs dt before dd; the number reads better on top. */
+.stat { display: flex; flex-direction: column-reverse; align-items: center; text-align: center; }
+.stat-value { margin: 0; font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat-label { color: var( --fg-muted ); font-size: 0.75rem; }
+
+.stats-recent { margin: 0; padding-left: 1.25rem; font-size: 0.9rem; }
+.stats-recent li { padding: 0.15rem 0; }
+
+.solved-summary { margin-bottom: 0.25rem; font-size: 1.2rem; font-weight: 700; }
+.confirm-message { font-size: 1rem; }
+
+.toast {
+  position: fixed;
+  bottom: calc( 1rem + env( safe-area-inset-bottom ) );
+  left: 50%;
+  z-index: 50;
+  max-width: min( 30rem , calc( 100vw - 2rem ) );
+  padding: 0.7rem 1rem;
+  color: var( --toast-fg );
+  background: var( --toast-bg );
+  border-radius: 10px;
+  box-shadow: var( --shadow );
+  font-size: 0.95rem;
+  text-align: center;
+  transform: translateX( -50% );
+}
+
+/* --- wider screens ----------------------------------------------------------- */
+
+@media ( min-width: 30rem ) {
+  .difficulty-grid { grid-template-columns: repeat( 4 , 1fr ); }
+}
+
+@media ( min-width: 48rem ) {
+  /* --board-user-size is the player's own size from the resize grip
+     (layout.js). Whatever it says, the board never outgrows the window:
+     22rem is the number pad beside it, 8.5rem the header and status bar. */
+  :root {
+    --board-size: min( var( --board-user-size , min( 72vh , 34rem ) ) , calc( 100vw - 22rem ) , calc( 100dvh - 8.5rem ) );
+  }
+
+  .game-app {
+    max-width: max( 64rem , calc( var( --board-size ) + 22rem ) );
+    padding: 0 1.5rem;
+  }
+  .wide-only { display: revert; }
+  #fullscreen-button { display: inline-grid; }
+  .board-resize { display: block; }
+
+  main.game-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2rem;
+    padding-top: 0.75rem;
+  }
+
+  .controls { width: 16rem; gap: 0.75rem; }
+
+  .number-pad {
+    grid-template-columns: repeat( 3 , 1fr );
+    gap: 0.6rem;
+  }
+
+  .pad-key { min-height: 4.4rem; font-size: 2.1rem; }
+  .pad-small { font-size: 1rem; }
+  .pad-pos-1, .pad-pos-2, .pad-pos-3 { top: 6px; }
+  .pad-pos-7, .pad-pos-8, .pad-pos-9 { bottom: 6px; }
+  .pad-pos-1, .pad-pos-4, .pad-pos-7 { left: 8px; }
+  .pad-pos-3, .pad-pos-6, .pad-pos-9 { right: 8px; }
+
+  .action-button { min-height: 3.2rem; font-size: 1.05rem; }
+
+  /* Fullscreen: the board and the number pad, nothing else. With no header
+     or status bar to make room for, the board can take the full height. */
+  .is-fullscreen {
+    --board-size: min( var( --board-user-size , 100dvh ) , calc( 100vw - 22rem ) , calc( 100dvh - 3rem ) );
+  }
+
+  .is-fullscreen .status-bar,
+  .is-fullscreen .mode-toggle,
+  .is-fullscreen .action-row,
+  .is-fullscreen .check-row,
+  .is-fullscreen .key-hint { display: none; }
+
+  .is-fullscreen main.game-layout {
+    align-items: center;
+    min-height: 100dvh;
+    padding: 1.5rem 0;
+  }
+
+  /* Board only (a setting): no number pad either -- it is a keyboard
+     layout, which is why it stops at this breakpoint. */
+  .board-only {
+    --board-size: min( var( --board-user-size , 100dvh ) , calc( 100vw - 4rem ) , calc( 100dvh - 3rem ) );
+  }
+
+  .board-only .status-bar,
+  .board-only .controls { display: none; }
+
+  .board-only main.game-layout {
+    align-items: center;
+    min-height: 100dvh;
+    padding: 1.5rem 0;
+  }
+
+  /* In both, the header waits just above the top edge -- an 8px strip of
+     it stays in the window to catch the pointer -- and slides down while
+     the pointer, keyboard focus, or its open menu is in it. Keyboard focus
+     only (:focus-visible): a button clicked with the mouse keeps focus, and
+     would otherwise pin the header open over the board. */
+  .is-fullscreen .game-header,
+  .board-only .game-header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 30;
+    padding: 0.35rem 1.5rem;
+    background: var( --cell-bg );
+    box-shadow: var( --shadow );
+    opacity: 0;
+    transform: translateY( calc( -100% + 8px ) );
+    transition: transform 0.18s ease , opacity 0.18s ease;
+  }
+
+  .is-fullscreen .game-header:hover,
+  .is-fullscreen .game-header:has( :focus-visible ),
+  .is-fullscreen .game-header:has( #more-menu:not( [hidden] ) ),
+  .board-only .game-header:hover,
+  .board-only .game-header:has( :focus-visible ),
+  .board-only .game-header:has( #more-menu:not( [hidden] ) ) {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media ( min-width: 48rem ) and ( prefers-reduced-motion: reduce ) {
+  .is-fullscreen .game-header,
+  .board-only .game-header { transition: none; }
+}
+
+/* --- print ------------------------------------------------------------------- */
+
+/* A clean puzzle to solve on paper: the givens and a heading, nothing that
+   depends on what was on screen. */
+@media print {
+  @page { margin: 1.5cm; }
+
+  /* #app as well: the fullscreen and board-only sizes are set there. */
+  :root, [data-theme="dark"], #app { --board-size: 16cm; }
+
+  body.game-page { background: #ffffff; }
+
+  .game-header, .status-bar, .controls, .toast, .board-overlay, .board-resize, dialog, #error-banner { display: none !important; }
+
+  main.game-layout { display: block; padding: 0; }
+  .board-wrap { margin: 0 auto; }
+
+  .print-heading {
+    display: block;
+    margin: 0 0 0.75cm;
+    color: #000000;
+    font: 700 15pt Georgia, "Times New Roman", serif;
+    text-align: center;
+  }
+
+  .board { border-color: #000000; }
+
+  .cell {
+    color: #000000 !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border-color: #8a8a8a;
+    box-shadow: none !important;
+  }
+
+  .cell.edge-right { border-right-color: #000000; }
+  .cell.edge-bottom { border-bottom-color: #000000; }
+  .cell:not( .given ) .value, .notes { visibility: hidden !important; }
+}

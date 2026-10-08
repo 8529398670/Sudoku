@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title data-i18n="app.title">&nbsp;</title>
+  <!-- Before the stylesheets, so a dark-mode player never sees a light flash. -->
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/game.css" />
+</head>
+<body class="game-page">
+  <!--
+    The game. No text is hardcoded: every label carries a data-i18n key
+    resolved from language.yaml, and the board, number pad, settings list,
+    and difficulty buttons are built by the scripts at the bottom using the
+    same file. Icons are inline SVG, labelled for screen readers through
+    data-i18n-attr.
+  -->
+  <p id="error-banner" class="notice notice-error" hidden></p>
+
+  <div id="app" class="game-app" hidden>
+    <header class="game-header">
+      <button id="difficulty-button" class="title-button" type="button" data-i18n-attr="aria-label:menu.new_game,title:menu.new_game">
+        <span id="difficulty-name" class="title-text"></span>
+        <svg class="icon icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+
+      <nav class="header-actions">
+        <button id="print-button" class="text-button wide-only" type="button" data-i18n="menu.print"></button>
+        <button id="fullscreen-button" class="icon-button" type="button">
+          <svg class="icon icon-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" /></svg>
+          <svg class="icon icon-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" /></svg>
+        </button>
+        <button id="help-button" class="icon-button" type="button" data-i18n-attr="aria-label:menu.help,title:menu.help">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" /><path d="M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.4-2.7 4" /><path d="M12 17.4v.1" /></svg>
+        </button>
+        <button id="stats-button" class="icon-button" type="button" data-i18n-attr="aria-label:menu.stats,title:menu.stats">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-8M12 20V5M19 20v-5" /></svg>
+        </button>
+        <button id="settings-button" class="icon-button" type="button" data-i18n-attr="aria-label:menu.settings,title:menu.settings">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="17" r="2" /></svg>
+        </button>
+        <div class="menu-wrap">
+          <button id="more-button" class="icon-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="more-menu"
+                  data-i18n-attr="aria-label:menu.more,title:menu.more">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle class="dot" cx="5" cy="12" r="1.6" /><circle class="dot" cx="12" cy="12" r="1.6" /><circle class="dot" cx="19" cy="12" r="1.6" /></svg>
+          </button>
+          <div id="more-menu" class="menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-action="hint" data-i18n="menu.hint"></button>
+            <button type="button" role="menuitem" data-action="check_cell" data-i18n="menu.check_cell"></button>
+            <button type="button" role="menuitem" data-action="check_puzzle" data-i18n="menu.check_puzzle"></button>
+            <button type="button" role="menuitem" data-action="reveal_cell" data-i18n="menu.reveal_cell"></button>
+            <button type="button" role="menuitem" data-action="reveal_puzzle" data-i18n="menu.reveal_puzzle"></button>
+            <hr />
+            <button type="button" role="menuitem" data-action="reset" data-i18n="menu.reset_puzzle"></button>
+            <hr />
+            <button type="button" role="menuitem" data-action="new_game" data-i18n="menu.new_game"></button>
+            <button type="button" role="menuitem" data-action="share" data-i18n="menu.share"></button>
+            <button type="button" role="menuitem" data-action="print" data-i18n="menu.print"></button>
+          </div>
+        </div>
+        <a id="account-link" class="icon-button" href="/account.html">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" /></svg>
+        </a>
+      </nav>
+    </header>
+
+    <div class="status-bar">
+      <span id="game-label" class="game-label"></span>
+      <span id="error-counter" class="error-counter" hidden>
+        <span data-i18n="game.errors_label"></span>
+        <span id="error-count" class="error-count"></span>
+      </span>
+      <span id="timer" class="timer">
+        <span id="timer-value" class="timer-value"></span>
+        <button id="pause-button" class="icon-button icon-button-small" type="button" data-i18n-attr="aria-label:game.pause,title:game.pause">
+          <svg class="icon icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" /></svg>
+        </button>
+      </span>
+    </div>
+
+    <main class="game-layout">
+      <div class="board-wrap">
+        <p id="print-heading" class="print-heading"></p>
+        <div id="board" class="board" role="grid"></div>
+        <!-- Desktop only: drag to resize, double-click to reset. layout.js. -->
+        <div id="board-resize" class="board-resize" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M20 10L10 20M20 15l-5 5M20 4L4 20" /></svg>
+        </div>
+        <div id="pause-overlay" class="board-overlay" hidden>
+          <p data-i18n="game.paused"></p>
+          <button id="resume-button" type="button" class="primary-button" data-i18n="game.resume"></button>
+        </div>
+        <div id="generating-overlay" class="board-overlay" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <p data-i18n="game.generating"></p>
+        </div>
+      </div>
+
+      <section id="controls" class="controls">
+        <div class="mode-toggle" role="radiogroup" data-i18n-attr="aria-label:game.mode_group_label">
+          <button id="mode-normal" type="button" role="radio" aria-checked="true" data-i18n="game.mode_normal"></button>
+          <button id="mode-candidate" type="button" role="radio" aria-checked="false" data-i18n="game.mode_candidate"></button>
+        </div>
+        <div id="number-pad" class="number-pad"></div>
+        <div class="action-row">
+          <button id="erase-button" type="button" class="action-button" data-i18n-attr="aria-label:game.erase,title:game.erase">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+          <button id="undo-button" type="button" class="action-button" data-i18n="game.undo"></button>
+        </div>
+        <label class="check-row" for="auto-candidate">
+          <input id="auto-candidate" type="checkbox" />
+          <span data-i18n="game.auto_candidate"></span>
+        </label>
+        <p class="key-hint wide-only" data-i18n="game.space_hint"></p>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <dialog id="new-game-dialog" class="sheet" aria-labelledby="new-game-heading">
+    <h2 id="new-game-heading" data-i18n="new_game.heading"></h2>
+    <section class="option-group">
+      <h3><span data-i18n="new_game.daily_heading"></span> <span id="daily-date" class="muted"></span></h3>
+      <p class="muted" data-i18n="new_game.daily_description"></p>
+      <div id="daily-options" class="difficulty-grid"></div>
+    </section>
+    <section class="option-group">
+      <h3 data-i18n="new_game.random_heading"></h3>
+      <p class="muted" data-i18n="new_game.random_description"></p>
+      <div id="random-options" class="difficulty-grid"></div>
+    </section>
+    <div class="dialog-actions">
+      <button id="new-game-close" type="button" class="secondary" data-close data-i18n="new_game.close"></button>
+    </div>
+  </dialog>
+
+  <dialog id="settings-dialog" class="sheet" aria-labelledby="settings-heading">
+    <h2 id="settings-heading" class="dialog-title" data-i18n="settings.heading"></h2>
+    <h3 class="section-label" data-i18n="settings.gameboard"></h3>
+    <ul id="settings-list" class="settings-list"></ul>
+    <h3 class="section-label" data-i18n="settings.appearance"></h3>
+    <ul id="appearance-list" class="settings-list"></ul>
+    <div class="dialog-actions">
+      <button type="button" data-close data-i18n="settings.close"></button>
+    </div>
+  </dialog>
+
+  <dialog id="help-dialog" class="sheet" aria-labelledby="help-heading">
+    <h2 id="help-heading" class="dialog-title" data-i18n="help.heading"></h2>
+    <p data-i18n="help.rules"></p>
+    <p data-i18n="help.modes"></p>
+    <p data-i18n="help.auto"></p>
+    <p data-i18n="help.menu"></p>
+    <p data-i18n="help.layout"></p>
+    <p data-i18n="help.sync"></p>
+    <h3 class="section-label" data-i18n="help.keyboard_heading"></h3>
+    <dl class="shortcuts">
+      <div><dt><kbd data-i18n="help.key_space"></kbd></dt><dd data-i18n="help.does_space"></dd></div>
+      <div><dt><kbd data-i18n="help.key_digits"></kbd></dt><dd data-i18n="help.does_digits"></dd></div>
+      <div><dt><kbd data-i18n="help.key_shift_digits"></kbd></dt><dd data-i18n="help.does_shift_digits"></dd></div>
+      <div><dt><kbd data-i18n="help.key_arrows"></kbd></dt><dd data-i18n="help.does_arrows"></dd></div>
+      <div><dt><kbd data-i18n="help.key_erase"></kbd></dt><dd data-i18n="help.does_erase"></dd></div>
+      <div><dt><kbd data-i18n="help.key_undo"></kbd></dt><dd data-i18n="help.does_undo"></dd></div>
+      <div><dt><kbd data-i18n="help.key_hint"></kbd></dt><dd data-i18n="help.does_hint"></dd></div>
+      <div><dt><kbd data-i18n="help.key_escape"></kbd></dt><dd data-i18n="help.does_escape"></dd></div>
+    </dl>
+    <div class="dialog-actions">
+      <button type="button" data-close data-i18n="help.close"></button>
+    </div>
+  </dialog>
+
+  <dialog id="stats-dialog" class="sheet" aria-labelledby="stats-heading">
+    <h2 id="stats-heading" class="dialog-title" data-i18n="stats.heading"></h2>
+    <div id="stats-tabs" class="stats-tabs" role="tablist"></div>
+    <dl id="stats-grid" class="stats-grid"></dl>
+    <h3 class="section-label" data-i18n="stats.recent"></h3>
+    <p id="stats-none" class="muted" data-i18n="stats.none" hidden></p>
+    <ol id="stats-recent" class="stats-recent"></ol>
+    <p id="stats-signed-out" class="muted" data-i18n="stats.signed_out_note" hidden></p>
+    <div class="dialog-actions">
+      <button type="button" data-close data-i18n="stats.close"></button>
+    </div>
+  </dialog>
+
+  <dialog id="solved-dialog" class="sheet solved" aria-labelledby="solved-heading">
+    <h2 id="solved-heading" class="dialog-title" data-i18n="solved.heading"></h2>
+    <p id="solved-summary" class="solved-summary"></p>
+    <p id="solved-details" class="muted"></p>
+    <div class="dialog-actions">
+      <button id="solved-stats" type="button" class="secondary" data-i18n="solved.stats"></button>
+      <button id="solved-new-game" type="button" data-i18n="solved.new_game"></button>
+    </div>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="sheet" aria-labelledby="confirm-message">
+    <p id="confirm-message" class="confirm-message"></p>
+    <div class="dialog-actions">
+      <button id="confirm-no" type="button" class="secondary" data-i18n="menu.confirm_cancel"></button>
+      <button id="confirm-yes" type="button" class="danger"></button>
+    </div>
+  </dialog>
+
+  <!--
+    Plain scripts in dependency order, one global each. sudoku-engine.js is
+    also loaded by sudoku-worker.js, which is why it touches no DOM.
+  -->
+  <script src="/js/dom.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/sudoku-engine.js"></script>
+  <script src="/js/sync.js"></script>
+  <script src="/js/generator.js"></script>
+  <script src="/js/links.js"></script>
+  <script src="/js/game.js"></script>
+  <script src="/js/board.js"></script>
+  <script src="/js/controls.js"></script>
+  <script src="/js/settings.js"></script>
+  <script src="/js/stats.js"></script>
+  <script src="/js/sound.js"></script>
+  <script src="/js/menu.js"></script>
+  <script src="/js/keyboard.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/play.js"></script>
+</body>
+</html>
