@@ -314,6 +314,8 @@ const Trainer = {
     Dom.get( "drill-check" ).addEventListener( "click" , function () { Trainer.check(); } );
     Dom.get( "drill-hint" ).addEventListener( "click" , function () { Trainer.action( "hint" ); } );
     Dom.get( "drill-next" ).addEventListener( "click" , function () { Trainer.next(); } );
+    Dom.get( "review-prev" ).addEventListener( "click" , function () { Hint.step( -1 ); } );
+    Dom.get( "review-next" ).addEventListener( "click" , function () { Hint.step( 1 ); } );
     Layout.init( Settings.values , {
       toast: function ( message , ms ) { Trainer.toast( message , ms ); },
       sizeKey: "sudoku.training.board_size",
@@ -529,7 +531,8 @@ const Trainer = {
     const progress = TrainProgress.get( this.current );
     Dom.text( Dom.get( "drill-progress" ) , this.mixed ? "" : I18n.format( "train.progress" , progress ) );
     Dom.get( "drill-check" ).disabled = this.finished;
-    Dom.get( "drill-hint" ).disabled = this.finished;
+    // Once finished, Hint brings the walkthrough back.
+    Dom.get( "drill-hint" ).disabled = false;
     Dom.get( "drill-next" ).className = this.finished ? "" : "secondary";
   },
 
@@ -577,7 +580,28 @@ const Trainer = {
     this.showResult( I18n.format( key , { technique: this.name() , streak: progress.streak } ) , solved );
     this.renderList();
     this.renderPanel();
-    this.render();
+    this.showReview();
+  },
+
+  // The instance the player's answer used -- the one whose eliminations they
+  // all made, or whose digit they placed -- else the first.
+  answered() {
+    const instances = this.instances();
+    const found = instances.find( function ( step ) {
+      if ( step.place ) return Drill.values[ step.cell ] === step.digit;
+      return step.eliminations.every( function ( entry ) { return ( Drill.struck[ entry[ 0 ] ] & entry[ 1 ] ) === entry[ 1 ]; } );
+    } );
+    return found || Drill.instances[ 0 ];
+  },
+
+  // After a drill: the whole walkthrough of what was just done, drawn on the
+  // position as it was (struck candidates back in view), to step through
+  // with the arrows. Nothing to apply.
+  showReview() {
+    const step = this.answered();
+    const content = HintExplain.build( step , Drill.state , [] );
+    content.action = null;
+    Hint.show( content , 4 );
   },
 
   // --- input ----------------------------------------------------------------------
@@ -587,7 +611,12 @@ const Trainer = {
     this.render();
   },
 
+  // Left and right step through a walkthrough while one is on screen.
   move( rows , cols ) {
+    if ( rows === 0 && Hint.walkthrough() ) {
+      Hint.step( cols );
+      return;
+    }
     const from = Drill.selected < 0 ? 0 : Drill.selected;
     const row = ( Engine.ROW_OF[ from ] + rows + 9 ) % 9;
     const col = ( Engine.COL_OF[ from ] + cols + 9 ) % 9;
@@ -627,7 +656,8 @@ const Trainer = {
   },
 
   action( name ) {
-    if ( name !== "hint" || !this.current || this.finished ) return;
+    if ( name !== "hint" || !this.current ) return;
+    if ( this.finished ) return this.showReview();
     this.hintUsed = true;
     const state = Engine.stateFrom( Drill.values , Drill.cand.map( function ( mask , i ) { return mask & ~Drill.struck[ i ]; } ) );
     // Teach the instance the player is closest to finishing; on an untouched
@@ -701,6 +731,13 @@ const Trainer = {
     Board.render( Drill , Settings.values , { overlay: Hint.overlay() } );
     Controls.update( Drill , this.finished );
     Dom.get( "undo-button" ).disabled = this.finished || Drill.undoStack.length === 0;
+    const walk = Hint.walkthrough();
+    Dom.show( Dom.get( "review-bar" ) , walk !== null );
+    if ( walk ) {
+      Dom.text( Dom.get( "review-progress" ) , I18n.format( "hints.progress" , { n: walk.frame + 1 , total: walk.total } ) );
+      Dom.get( "review-prev" ).disabled = walk.frame === 0;
+      Dom.get( "review-next" ).disabled = walk.frame === walk.total - 1;
+    }
   },
 
   toast( message , milliseconds ) {

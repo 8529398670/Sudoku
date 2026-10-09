@@ -89,6 +89,12 @@ const Hint = {
     return content.walk[ this.frame ];
   },
 
+  // { frame , total } while a walkthrough is on screen, else null.
+  walkthrough() {
+    if ( this.content === null || this.level !== 4 || this.content.walk.length < 2 ) return null;
+    return { frame: this.frame , total: this.content.walk.length };
+  },
+
   // What board.js needs to draw the hint, or null.
   overlay() {
     const frame = this.current();

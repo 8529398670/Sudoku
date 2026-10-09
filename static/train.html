@@ -40,6 +40,7 @@
     <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
 
     <main class="game-layout train-layout">
+      <div class="board-column">
       <div class="board-wrap">
         <div id="board" class="board" role="grid"></div>
         <!-- Desktop only: drag to resize, double-click to reset. layout.js. -->
@@ -50,6 +51,19 @@
           <span class="spinner" aria-hidden="true"></span>
           <p id="drill-waiting" data-i18n="train.loading"></p>
         </div>
+      </div>
+
+      <!-- Steps through the walkthrough under the board (also the left and
+           right arrow keys) whenever one is on screen -- after every drill. -->
+      <div id="review-bar" class="review-bar" hidden>
+        <button id="review-prev" class="review-arrow secondary" type="button" data-i18n-attr="aria-label:hints.back,title:hints.back">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+        </button>
+        <span id="review-progress" class="review-progress"></span>
+        <button id="review-next" class="review-arrow" type="button" data-i18n-attr="aria-label:hints.next,title:hints.next">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+        </button>
+      </div>
       </div>
 
       <section id="controls" class="controls">
