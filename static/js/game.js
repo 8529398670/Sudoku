@@ -187,6 +187,64 @@ const Game = {
     return -1;
   },
 
+  // The candidates a hint should reason from, one mask per cell: what the
+  // player's pencil marks say, where they have any. 0 means "no marks
+  // here", which Engine.stateFrom reads as every candidate the cell can have.
+  hintMasks() {
+    const masks = new Array( 81 ).fill( 0 );
+    for ( let i = 0; i < 81; i += 1 ) {
+      if ( this.values[ i ] !== 0 ) continue;
+      masks[ i ] = this.auto ? ( this.autoCache[ i ] & ~this.struck[ i ] ) || Engine.ALL : this.notes[ i ];
+    }
+    return masks;
+  },
+
+  // { cell , digit } for an empty cell whose pencil marks have lost the
+  // answer -- crossed out in Auto Candidate mode, or missing from notes the
+  // player has written -- or null.
+  firstCandidateMistake() {
+    for ( let i = 0; i < 81; i += 1 ) {
+      if ( this.values[ i ] !== 0 ) continue;
+      const shown = this.auto ? this.autoCache[ i ] & ~this.struck[ i ] : this.notes[ i ];
+      if ( this.auto === false && shown === 0 ) continue;
+      if ( ( shown & Engine.bit( this.solution[ i ] ) ) === 0 ) return { cell: i , digit: this.solution[ i ] };
+    }
+    return null;
+  },
+
+  // A hint's eliminations, as one move (one undo). In Auto Candidate mode
+  // they are struck out; with the player's own notes, a cell they had not
+  // pencilled yet is filled with its candidates first, minus the ones that
+  // go -- the hint showed them, so that is what they now see.
+  applyEliminations( eliminations ) {
+    if ( this.playing() === false || eliminations.length === 0 ) return { changed: false };
+    this.pushUndo();
+    const self = this;
+    eliminations.forEach( function ( entry ) {
+      const cell = entry[ 0 ];
+      if ( self.values[ cell ] !== 0 ) return;
+      if ( self.auto ) {
+        self.struck[ cell ] |= entry[ 1 ] & self.autoCache[ cell ];
+      } else {
+        const base = self.notes[ cell ] || self.autoCache[ cell ];
+        self.notes[ cell ] = base & ~entry[ 1 ];
+      }
+    } );
+    this.touch();
+    return { changed: true };
+  },
+
+  // Puts a wrongly crossed-out candidate back.
+  restoreCandidate( cell , digit ) {
+    if ( this.isLocked( cell ) || this.values[ cell ] !== 0 ) return { changed: false };
+    const mask = Engine.bit( digit );
+    this.pushUndo();
+    if ( this.auto ) this.struck[ cell ] &= ~mask;
+    else this.notes[ cell ] |= mask;
+    this.touch();
+    return { changed: true };
+  },
+
   result( today ) {
     return {
       game_id: this.meta.id,

@@ -48,7 +48,7 @@ fi
 # Version metadata, stamped into the binary and readable later with
 # `./sudoku version`. Being able to ask a binary what it is beats
 # guessing from a filename once a few copies are in circulation.
-VERSION="${VERSION:-$( git describe --tags --always --dirty 2>/dev/null || echo "dev" )}"
+VERSION="${VERSION:-$( git describe --tags --always 2>/dev/null || echo "dev" )}"
 COMMIT="$( git rev-parse --short HEAD 2>/dev/null || echo "unknown" )"
 # Honour SOURCE_DATE_EPOCH so a build can be byte-for-byte reproducible.
 BUILD_DATE="$( date -u -r "${SOURCE_DATE_EPOCH:-$( date +%s )}" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \

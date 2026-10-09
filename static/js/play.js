@@ -13,6 +13,11 @@ const Play = {
   toastTimer: null,
 
   async init() {
+    // The training ground is its own page; /train is the friendly address.
+    if ( window.location.pathname.replace( /\/+$/ , "" ) === "/train" ) {
+      window.location.replace( "/train.html" );
+      return;
+    }
     try {
       await I18n.load();
       I18n.apply();
@@ -43,7 +48,11 @@ const Play = {
       onMode: function ( mode ) { Play.setMode( mode ); },
       onAuto: function ( on ) { Play.setAuto( on ); },
     } );
-    Keyboard.init();
+    Keyboard.init( this );
+    Hint.init( {
+      onChange: function () { Play.render(); },
+      onApply: function ( action ) { Play.applyHint( action ); },
+    } );
     Menu.init();
     Stats.init();
     Layout.init( Settings.values );
@@ -100,6 +109,7 @@ const Play = {
 
   afterLoad( history ) {
     this.hintCells = null;
+    Hint.close();
     this.manualPause = false;
     this.setMode( "normal" );
     this.renderHeader();
@@ -269,6 +279,8 @@ const Play = {
   after( outcome ) {
     if ( !outcome || outcome.changed === false ) return;
     this.hintCells = null;
+    // A move changes the board the hint was worked out from.
+    Hint.close();
     this.save( true );
     if ( outcome.finished ) {
       this.onFinished( outcome.finished );
@@ -298,6 +310,11 @@ const Play = {
     if ( name === "share" ) return this.share();
     if ( name === "help" ) return Menu.open( "help-dialog" );
     if ( name === "settings" ) return Menu.open( "settings-dialog" );
+    if ( name === "training" ) {
+      this.leaveCurrent();
+      window.location.href = "/train.html";
+      return;
+    }
     // Reset works on a finished puzzle too -- that is how you replay one.
     // Its result is already recorded, and results are one per puzzle, so a
     // replay cannot pad the stats.
@@ -331,6 +348,7 @@ const Play = {
     if ( await Menu.confirm( "menu.confirm_reset" , "menu.reset_yes" ) === false ) return;
     Game.reset();
     this.hintCells = null;
+    Hint.close();
     this.manualPause = false;
     this.save( true );
     if ( document.hidden === false ) Game.startClock();
@@ -344,46 +362,49 @@ const Play = {
   },
 
   // A hint points at a mistake first -- no deduction is any use on top of a
-  // wrong digit -- and otherwise at the next cell a person could fill, named
-  // by the technique that finds it. It does not fill the cell in.
+  // wrong digit or a crossed-out answer -- and otherwise at the next step a
+  // person would take from their own pencil marks, easiest technique first.
+  // It opens at the player's chosen level of detail; the panel can go
+  // further. Nothing changes on the board until they press Apply.
   hint() {
-    const mistake = Game.firstMistake();
     Game.addHint();
+    this.hintCells = null;
+    const level = Settings.level( "hint_level" );
+    const mistake = Game.firstMistake();
     if ( mistake >= 0 ) {
       Game.markWrong( mistake );
       Game.selected = mistake;
-      this.hintCells = [ mistake ];
-      this.toast( I18n.get( "hints.mistake" ) , 6000 );
+      Hint.show( HintExplain.valueMistake( mistake ) , Math.max( level , 2 ) );
       return this.afterQuiet( true );
     }
-
-    const step = Engine.findStep( Game.values , Game.puzzle );
-    if ( step === null ) {
+    const lost = Game.firstCandidateMistake();
+    if ( lost !== null ) {
+      Hint.show( HintExplain.candidateMistake( lost.cell , lost.digit ) , level );
+      return this.afterQuiet( true );
+    }
+    const found = Engine.hintFrom( Game.values , Game.hintMasks() , Game.puzzle );
+    if ( found === null ) {
+      Hint.close();
       this.toast( I18n.get( "hints.none" ) , 6000 );
       return this.afterQuiet( true );
     }
-    Game.selected = step.cell;
-    this.hintCells = step.cells;
-    this.toast( this.hintMessage( step ) , 8000 );
+    if ( found.step.place ) Game.selected = found.step.cell;
+    Hint.show( HintExplain.build( found.step , found.state , found.replayed ) , level );
     this.afterQuiet( true );
   },
 
-  hintMessage( step ) {
-    const params = {
-      row: Engine.ROW_OF[ step.cell ] + 1,
-      col: Engine.COL_OF[ step.cell ] + 1,
-      digit: step.digit,
-    };
-    let key = "hints.naked_single";
-    if ( step.technique === "hidden_single" ) {
-      key = step.unit < 9 ? "hints.hidden_single_row" : step.unit < 18 ? "hints.hidden_single_col" : "hints.hidden_single_box";
+  applyHint( action ) {
+    if ( this.canPlay() === false ) return;
+    if ( action.kind === "eliminate" ) return this.after( Game.applyEliminations( action.eliminations ) );
+    if ( action.kind === "restore" ) return this.after( Game.restoreCandidate( action.cell , action.digit ) );
+    if ( action.kind === "erase" ) {
+      Game.selected = action.cell;
+      return this.after( Game.erase( action.cell ) );
     }
-    let message = I18n.format( key , params );
-    const names = step.via.map( function ( name ) { return I18n.get( "hints.technique." + name ); } ).filter( Boolean );
-    if ( names.length ) {
-      message = I18n.format( "hints.via" , { techniques: names.join( I18n.get( "hints.joiner" ) ) } ) + " " + message;
+    if ( action.kind === "place" ) {
+      Game.selected = action.cell;
+      return this.after( Game.setValue( action.cell , action.digit , Settings.values ) );
     }
-    return message;
   },
 
   print() {
@@ -436,7 +457,7 @@ const Play = {
 
   render() {
     if ( Game.meta === null ) return;
-    Board.render( Game , Settings.values , { hintCells: this.hintCells } );
+    Board.render( Game , Settings.values , { hintCells: this.hintCells , overlay: Hint.overlay() } );
     Controls.update( Game , this.generating || this.manualPause );
     this.renderStatus();
   },

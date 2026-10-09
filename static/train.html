@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title data-i18n="train.title">&nbsp;</title>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/game.css" />
+</head>
+<body class="game-page train-page">
+  <!--
+    The training ground: one technique at a time, on positions made for it
+    (train.js). It reuses the game's board, number pad, keyboard shortcuts
+    and hint panel; every label comes from language.yaml like the game's.
+  -->
+  <p id="error-banner" class="notice notice-error" hidden></p>
+
+  <div id="app" class="game-app" hidden>
+    <header class="game-header">
+      <a class="text-button back-link" href="/" data-i18n="train.back"></a>
+      <h1 class="train-heading" data-i18n="train.heading"></h1>
+    </header>
+
+    <div class="train-bar">
+      <label class="train-select-label" for="train-select" data-i18n="train.select_label"></label>
+      <select id="train-select" class="train-select"></select>
+    </div>
+
+    <main class="game-layout train-layout">
+      <nav id="train-list" class="train-list" data-i18n-attr="aria-label:train.select_label"></nav>
+
+      <div class="board-wrap">
+        <div id="board" class="board" role="grid"></div>
+        <div id="generating-overlay" class="board-overlay" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <p id="drill-waiting" data-i18n="train.loading"></p>
+        </div>
+      </div>
+
+      <section id="controls" class="controls">
+        <section class="drill-panel">
+          <p id="drill-technique" class="drill-technique"></p>
+          <p id="drill-prompt" class="drill-prompt"></p>
+          <p id="drill-result" class="drill-result" role="status" hidden></p>
+          <div class="drill-actions">
+            <button id="drill-check" type="button" data-i18n="train.check"></button>
+            <button id="drill-hint" type="button" class="secondary" data-i18n="train.hint"></button>
+            <button id="drill-next" type="button" class="secondary" data-i18n="train.next"></button>
+          </div>
+          <p id="drill-progress" class="muted drill-progress"></p>
+        </section>
+
+        <section id="hint-panel" class="hint-panel" aria-live="polite" hidden>
+          <div class="hint-head">
+            <h2 id="hint-title" class="hint-title"></h2>
+            <button id="hint-close" class="icon-button icon-button-small" type="button" data-i18n-attr="aria-label:hints.close,title:hints.close">
+              <svg class="icon icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </div>
+          <div id="hint-levels" class="hint-levels" role="radiogroup"></div>
+          <p id="hint-text" class="hint-text"></p>
+          <div id="hint-steps" class="hint-steps" hidden>
+            <button id="hint-back" type="button" class="secondary" data-i18n="hints.back"></button>
+            <span id="hint-progress" class="hint-progress"></span>
+            <button id="hint-next" type="button" data-i18n="hints.next"></button>
+          </div>
+          <div class="hint-actions">
+            <a id="hint-learn" class="hint-learn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="hints.learn_more" hidden></a>
+            <button id="hint-apply" type="button" hidden></button>
+          </div>
+        </section>
+
+        <div class="mode-toggle" role="radiogroup" data-i18n-attr="aria-label:game.mode_group_label">
+          <button id="mode-normal" type="button" role="radio" aria-checked="true" data-i18n="game.mode_normal"></button>
+          <button id="mode-candidate" type="button" role="radio" aria-checked="false" data-i18n="game.mode_candidate"></button>
+        </div>
+        <div id="number-pad" class="number-pad"></div>
+        <div class="action-row">
+          <button id="erase-button" type="button" class="action-button" data-i18n-attr="aria-label:game.erase,title:game.erase">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+          <button id="undo-button" type="button" class="action-button" data-i18n="game.undo"></button>
+        </div>
+        <!-- Drills always show candidates; Controls expects this switch. -->
+        <input id="auto-candidate" type="checkbox" hidden />
+        <p class="key-hint wide-only" data-i18n="train.keys"></p>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <script src="/js/dom.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/sudoku-engine.js"></script>
+  <script src="/js/sync.js"></script>
+  <script src="/js/settings.js"></script>
+  <script src="/js/board.js"></script>
+  <script src="/js/controls.js"></script>
+  <script src="/js/keyboard.js"></script>
+  <script src="/js/hint-explain.js"></script>
+  <script src="/js/hint.js"></script>
+  <script src="/js/training-seeds.js"></script>
+  <script src="/js/train.js"></script>
+</body>
+</html>

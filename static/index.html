@@ -33,6 +33,9 @@
           <svg class="icon icon-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" /></svg>
           <svg class="icon icon-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" /></svg>
         </button>
+        <a id="training-link" class="icon-button" href="/train.html" data-i18n-attr="aria-label:menu.training,title:menu.training">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></svg>
+        </a>
         <button id="help-button" class="icon-button" type="button" data-i18n-attr="aria-label:menu.help,title:menu.help">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" /><path d="M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.4-2.7 4" /><path d="M12 17.4v.1" /></svg>
         </button>
@@ -57,6 +60,7 @@
             <button type="button" role="menuitem" data-action="reset" data-i18n="menu.reset_puzzle"></button>
             <hr />
             <button type="button" role="menuitem" data-action="new_game" data-i18n="menu.new_game"></button>
+            <button type="button" role="menuitem" data-action="training" data-i18n="menu.training"></button>
             <button type="button" role="menuitem" data-action="share" data-i18n="menu.share"></button>
             <button type="button" role="menuitem" data-action="print" data-i18n="menu.print"></button>
           </div>
@@ -100,6 +104,27 @@
       </div>
 
       <section id="controls" class="controls">
+        <!-- The hint panel (hint.js): what the hint says at the chosen level
+             of detail, and its walkthrough controls. -->
+        <section id="hint-panel" class="hint-panel" aria-live="polite" hidden>
+          <div class="hint-head">
+            <h2 id="hint-title" class="hint-title"></h2>
+            <button id="hint-close" class="icon-button icon-button-small" type="button" data-i18n-attr="aria-label:hints.close,title:hints.close">
+              <svg class="icon icon-small" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </div>
+          <div id="hint-levels" class="hint-levels" role="radiogroup"></div>
+          <p id="hint-text" class="hint-text"></p>
+          <div id="hint-steps" class="hint-steps" hidden>
+            <button id="hint-back" type="button" class="secondary" data-i18n="hints.back"></button>
+            <span id="hint-progress" class="hint-progress"></span>
+            <button id="hint-next" type="button" data-i18n="hints.next"></button>
+          </div>
+          <div class="hint-actions">
+            <a id="hint-learn" class="hint-learn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="hints.learn_more" hidden></a>
+            <button id="hint-apply" type="button" hidden></button>
+          </div>
+        </section>
         <div class="mode-toggle" role="radiogroup" data-i18n-attr="aria-label:game.mode_group_label">
           <button id="mode-normal" type="button" role="radio" aria-checked="true" data-i18n="game.mode_normal"></button>
           <button id="mode-candidate" type="button" role="radio" aria-checked="false" data-i18n="game.mode_candidate"></button>
@@ -145,6 +170,8 @@
     <ul id="settings-list" class="settings-list"></ul>
     <h3 class="section-label" data-i18n="settings.appearance"></h3>
     <ul id="appearance-list" class="settings-list"></ul>
+    <h3 class="section-label" data-i18n="settings.hints"></h3>
+    <div id="level-settings"></div>
     <div class="dialog-actions">
       <button type="button" data-close data-i18n="settings.close"></button>
     </div>
@@ -225,6 +252,8 @@
   <script src="/js/menu.js"></script>
   <script src="/js/keyboard.js"></script>
   <script src="/js/layout.js"></script>
+  <script src="/js/hint-explain.js"></script>
+  <script src="/js/hint.js"></script>
   <script src="/js/play.js"></script>
 </body>
 </html>

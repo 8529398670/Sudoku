@@ -34,6 +34,25 @@
   --hint-ring: #2860d8;
   --note-fg: #6a6a6a;
 
+  /* Hint marks (hint-explain.js names the roles). */
+  --m-unit: rgba( 40 , 96 , 216 , 0.09 );
+  --m-pattern: #d6e4ff;
+  --m-target: #e8590c;
+  --m-pivot: #e7d8ff;
+  --m-pincer: #cdeee6;
+  --m-fin: #ffe3a3;
+  --m-colour-a: #c8eccf;
+  --m-colour-b: #cfe0ff;
+  --m-blocker: #ffd8cc;
+  --m-ruled: rgba( 90 , 90 , 90 , 0.16 );
+  --n-keep: #2b8a3e;
+  --n-elim: #d6336c;
+  --n-a: #2b8a3e;
+  --n-b: #1971c2;
+  --link-strong: #1971c2;
+  --link-weak: #1971c2;
+  --link-sees: #e8590c;
+
   --key-bg: #e2e2e2;
   --key-fg: #121212;
   --key-border: #d2d2d2;
@@ -68,6 +87,24 @@
   --selected-bg: #c66f00;
   --hint-ring: #7eaaff;
   --note-fg: #a2a9b3;
+
+  --m-unit: rgba( 126 , 170 , 255 , 0.1 );
+  --m-pattern: #263a5e;
+  --m-target: #ff922b;
+  --m-pivot: #3d2f5c;
+  --m-pincer: #1d4a42;
+  --m-fin: #4f3d12;
+  --m-colour-a: #1f4a2a;
+  --m-colour-b: #1f3a63;
+  --m-blocker: #5a2f22;
+  --m-ruled: rgba( 255 , 255 , 255 , 0.1 );
+  --n-keep: #51cf66;
+  --n-elim: #ff6b9a;
+  --n-a: #51cf66;
+  --n-b: #74c0fc;
+  --link-strong: #74c0fc;
+  --link-weak: #74c0fc;
+  --link-sees: #ffa94d;
 
   --key-bg: #2b3037;
   --key-fg: #f1f1f1;
@@ -317,6 +354,127 @@ main.game-layout {
 .cell.wrong { background-image: linear-gradient( var( --wrong-tint ) , var( --wrong-tint ) ); }
 .cell.wrong .value { color: var( --wrong-fg ); }
 .cell.hint { box-shadow: inset 0 0 0 3px var( --hint-ring ); }
+
+/* --- hint marks ------------------------------------------------------------ */
+
+/* Shading for the units a hint is about; a tint, so it layers over givens. */
+.cell.m-unit { background-image: linear-gradient( var( --m-unit ) , var( --m-unit ) ); }
+.cell.selected-quiet { box-shadow: inset 0 0 0 2px var( --box-line ); }
+
+.cell.m-pattern { background-color: var( --m-pattern ); }
+.cell.m-pivot { background-color: var( --m-pivot ); }
+.cell.m-pincer { background-color: var( --m-pincer ); }
+.cell.m-fin { background-color: var( --m-fin ); }
+.cell.m-colour-a { background-color: var( --m-colour-a ); }
+.cell.m-colour-b { background-color: var( --m-colour-b ); }
+.cell.m-blocker { background-color: var( --m-blocker ); }
+.cell.m-blocker .value { text-decoration: underline; text-underline-offset: 0.12em; }
+.cell.m-ruled { background-image: repeating-linear-gradient( 45deg , var( --m-ruled ) 0 3px , transparent 3px 8px ); }
+.cell.m-dim .value { opacity: 0.35; }
+.cell.m-target { box-shadow: inset 0 0 0 3px var( --m-target ); }
+.cell.m-place .value { color: var( --m-target ); opacity: 0.75; }
+
+.note.n-dim { opacity: 0.22; }
+.note.n-ghost { font-style: italic; opacity: 0.55; }
+.note.n-focus { color: var( --given-fg ); font-weight: 800; }
+.note.n-keep,
+.note.n-elim,
+.note.n-a,
+.note.n-b {
+  color: #ffffff;
+  font-weight: 800;
+  border-radius: 50%;
+}
+.note.n-keep { background: var( --n-keep ); }
+.note.n-a { background: var( --n-a ); }
+.note.n-b { background: var( --n-b ); }
+.note.n-elim { background: var( --n-elim ); border-radius: 3px; text-decoration: line-through; }
+[data-theme="dark"] .note.n-keep,
+[data-theme="dark"] .note.n-elim,
+[data-theme="dark"] .note.n-a,
+[data-theme="dark"] .note.n-b { color: #0b0d10; }
+
+/* Links between candidates, drawn by board.js in pixels over the board. */
+.board-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.board-lines .link { stroke-width: 2.5; stroke-linecap: round; fill: none; }
+.board-lines .link-strong { stroke: var( --link-strong ); }
+.board-lines .link-weak { stroke: var( --link-weak ); stroke-dasharray: 6 5; }
+.board-lines .link-sees { stroke: var( --link-sees ); stroke-width: 1.8; stroke-dasharray: 2 4; }
+.board-lines marker path { fill: var( --link-sees ); }
+
+/* Row and column numbers; shown beside the board on wider screens only. */
+.coords { display: none; }
+
+/* --- hint panel ------------------------------------------------------------ */
+
+.hint-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem 0.85rem;
+  color: var( --fg );
+  background: var( --card-bg );
+  border: 2px solid var( --hint-ring );
+  border-radius: 12px;
+}
+
+.hint-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.hint-title { margin: 0; font-size: 1.05rem; font-weight: 800; }
+
+.hint-levels {
+  display: grid;
+  grid-template-columns: repeat( 4 , 1fr );
+  overflow: hidden;
+  border: 1px solid var( --key-border );
+  border-radius: 8px;
+}
+
+.game-page .hint-level {
+  min-height: 34px;
+  padding: 0.2rem 0.15rem;
+  color: var( --toggle-fg );
+  background: var( --toggle-bg );
+  border: none;
+  border-radius: 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.game-page .hint-level[aria-checked="true"] {
+  color: var( --toggle-on-fg );
+  background: var( --toggle-on-bg );
+  font-weight: 700;
+}
+
+.hint-text { margin: 0; min-height: 2.9em; font-size: 0.95rem; line-height: 1.45; }
+
+.hint-steps,
+.hint-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.game-page .hint-steps button { min-height: 36px; padding: 0 0.9rem; }
+.hint-progress { color: var( --fg-muted ); font-size: 0.85rem; }
+.hint-learn { color: var( --accent ); font-size: 0.85rem; }
+.game-page #hint-apply { min-height: 40px; margin-left: auto; }
 
 .notes {
   position: absolute;
@@ -576,6 +734,30 @@ dialog.sheet::backdrop { background: rgba( 0 , 0 , 0 , 0.45 ); }
 .game-page button.danger { background: var( --wrong-fg ); color: #ffffff; }
 
 .settings-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var( --border ); }
+.level-setting { padding: 0.5rem 0; border-top: 1px solid var( --border ); }
+.level-label { margin: 0 0 0.4rem; font-size: 0.95rem; font-weight: 500; }
+.level-help { margin: 0.4rem 0 0; font-size: 0.8rem; }
+
+.level-options {
+  display: grid;
+  grid-template-columns: repeat( 4 , 1fr );
+  overflow: hidden;
+  border: 1px solid var( --key-border );
+  border-radius: 8px;
+}
+
+.game-page .level-option {
+  min-height: 40px;
+  padding: 0.25rem;
+  color: var( --toggle-fg );
+  background: var( --toggle-bg );
+  border: none;
+  border-radius: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.game-page .level-option[aria-checked="true"] { color: var( --toggle-on-fg ); background: var( --toggle-on-bg ); font-weight: 700; }
 .settings-list li { border-bottom: 1px solid var( --border ); }
 .setting-row { min-height: 44px; }
 
@@ -681,6 +863,62 @@ kbd {
   transform: translateX( -50% );
 }
 
+/* --- training ground (train.html) ------------------------------------------ */
+
+.train-heading {
+  flex: 1;
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.back-link { display: inline-flex; align-items: center; color: var( --fg ); text-decoration: none; }
+
+.train-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+}
+
+.game-page .train-select-label { margin: 0; color: var( --fg-muted ); font-size: 0.85rem; }
+
+.train-select {
+  flex: 1;
+  min-height: 40px;
+  padding: 0.3rem 0.5rem;
+  color: var( --fg );
+  background: var( --card-bg );
+  border: 1px solid var( --border );
+  border-radius: 8px;
+  font: inherit;
+}
+
+.train-list { display: none; }
+
+.drill-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0.85rem;
+  background: var( --card-bg );
+  border: 1px solid var( --border );
+  border-radius: 12px;
+}
+
+.drill-technique { margin: 0; font-size: 1.1rem; font-weight: 800; }
+.drill-prompt { margin: 0; font-size: 0.95rem; line-height: 1.4; }
+.drill-progress { margin: 0; font-size: 0.8rem; }
+
+.drill-result { margin: 0; padding: 0.45rem 0.6rem; border-radius: 8px; font-size: 0.92rem; font-weight: 600; }
+.drill-result.good { color: var( --ok-fg ); background: var( --ok-bg ); }
+.drill-result.bad { color: var( --error-fg ); background: var( --error-bg ); }
+
+.drill-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.game-page .drill-actions button { flex: 1 1 auto; min-height: 40px; padding: 0.4rem 0.7rem; }
+
 /* --- wider screens ----------------------------------------------------------- */
 
 @media ( min-width: 30rem ) {
@@ -726,6 +964,37 @@ kbd {
   .pad-pos-3, .pad-pos-6, .pad-pos-9 { right: 8px; }
 
   .action-button { min-height: 3.2rem; font-size: 1.05rem; }
+
+  /* Training: the technique list joins the board and controls once there
+     is room for three columns. */
+  .train-page main.game-layout { gap: 1.5rem; }
+
+  .board-wrap.show-coords .coords {
+    position: absolute;
+    display: grid;
+    color: var( --fg-muted );
+    font-size: 0.75rem;
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  .coords-rows {
+    top: 3px;
+    bottom: 3px;
+    left: -1.25rem;
+    width: 1rem;
+    grid-template-rows: repeat( 9 , 1fr );
+    align-items: center;
+    text-align: right;
+  }
+
+  .coords-cols {
+    top: -1.2rem;
+    left: 3px;
+    right: 3px;
+    grid-template-columns: repeat( 9 , 1fr );
+    text-align: center;
+  }
 
   /* Fullscreen: the board and the number pad, nothing else. With no header
      or status bar to make room for, the board can take the full height. */
@@ -791,6 +1060,55 @@ kbd {
   }
 }
 
+@media ( min-width: 64rem ) {
+  .train-page {
+    --board-size: min( var( --board-user-size , min( 72vh , 34rem ) ) , calc( 100vw - 40rem ) , calc( 100dvh - 9rem ) );
+  }
+
+  .train-page .game-app { max-width: max( 80rem , calc( var( --board-size ) + 40rem ) ); }
+  .train-page .train-bar { display: none; }
+
+  .train-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 14rem;
+    max-height: calc( 100dvh - 6rem );
+    overflow-y: auto;
+  }
+
+  .train-list > * { flex-shrink: 0; }
+
+  .train-tier {
+    margin: 0.6rem 0 0.15rem;
+    color: var( --fg-muted );
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .game-page .train-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 0;
+    padding: 0.35rem 0.55rem;
+    color: var( --fg );
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    text-align: left;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .game-page .train-item:hover { background: var( --hover ); }
+  .game-page .train-item[aria-current="true"] { background: var( --m-pattern ); border-color: var( --hint-ring ); }
+  .train-badge { color: var( --fg-muted ); font-size: 0.72rem; font-weight: 500; }
+  .train-item.mastered .train-badge { color: var( --ok-fg ); font-weight: 700; }
+}
+
 @media ( min-width: 48rem ) and ( prefers-reduced-motion: reduce ) {
   .is-fullscreen .game-header,
   .board-only .game-header { transition: none; }
@@ -808,7 +1126,8 @@ kbd {
 
   body.game-page { background: #ffffff; }
 
-  .game-header, .status-bar, .controls, .toast, .board-overlay, .board-resize, dialog, #error-banner { display: none !important; }
+  .game-header, .status-bar, .controls, .toast, .board-overlay, .board-resize, dialog, #error-banner,
+  .board-lines, .coords { display: none !important; }
 
   main.game-layout { display: block; padding: 0; }
   .board-wrap { margin: 0 auto; }

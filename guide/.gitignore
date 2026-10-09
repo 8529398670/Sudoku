@@ -1,0 +1,6 @@
+# The diagrams in */images/ are © Andrew Stuart / sudokuwiki.org and are
+# downloaded for personal study only. The site's terms forbid reproducing
+# them without written consent, so keep them out of git (and therefore out of
+# the GitHub push in ../gitPushUpdate.sh). The Markdown text is original and
+# can be committed. To restore the images, re-run the crawl.
+*/images/

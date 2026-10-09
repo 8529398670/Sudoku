@@ -16,8 +16,8 @@ import (
 // gets the same game with localStorage standing in for all of this.
 
 type sudokuSettingsRequest struct {
-	Settings  map[string]bool `json:"settings"`
-	CSRFToken string          `json:"csrf_token"`
+	Settings  map[string]any `json:"settings"`
+	CSRFToken string         `json:"csrf_token"`
 }
 
 type sudokuGameRequest struct {
@@ -42,7 +42,7 @@ func ( handlers *Handlers ) GetSudokuSettings( c fiber.Ctx ) ( err error ) {
 	}
 	// null rather than {} for "never saved", so the client knows to push its
 	// local settings up instead of adopting an empty set.
-	var values map[string]bool
+	var values map[string]any
 	if settings != nil { values = settings.Values }
 	err = c.JSON( fiber.Map{ "settings": values } )
 	return
