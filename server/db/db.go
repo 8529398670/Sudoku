@@ -24,7 +24,8 @@ var ErrNotFound = errors.New( "db: not found" )
 
 // Bucket names. Add new ones here and to bucketNames so they are created at
 // startup -- a bucket that only gets created on first write is a nil-pointer
-// panic waiting for the first reader.
+// panic waiting for the first reader. A bucket that holds per-user data also
+// belongs in models.DeleteUser, or deleting an account leaves it behind.
 const (
 	BucketUsers       = "users"
 	BucketSessions    = "sessions"

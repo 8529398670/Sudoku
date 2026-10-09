@@ -1,10 +1,12 @@
 package routes
 
 import (
+	errors "errors"
 	strconv "strconv"
 
 	fiber "github.com/gofiber/fiber/v3"
 
+	db "sudoku/server/db"
 	models "sudoku/server/models"
 	security "sudoku/server/security"
 )
@@ -201,5 +203,43 @@ func ( handlers *Handlers ) SetUserFeatures( c fiber.Ctx ) ( err error ) {
 	}
 	user , _ := models.GetUser( handlers.Store , user_id )
 	err = c.JSON( fiber.Map{ "ok": true , "features": user.Features() } )
+	return
+}
+
+// DeleteUser removes an account and everything stored for it, for good --
+// see models.DeleteUser. Any admin may delete any other account, admins
+// included, but not their own: that is the same guard rail as disabling, and
+// it also means at least one admin is always left to run the app.
+func ( handlers *Handlers ) DeleteUser( c fiber.Ctx ) ( err error ) {
+	var body csrfOnlyRequest
+	if c.Bind().Body( &body ) != nil {
+		err = badRequest( c , "malformed request body" )
+		return
+	}
+	if handlers.Guard.CheckCSRF( c , body.CSRFToken ) == false {
+		err = forbidden( c , "invalid csrf token" )
+		return
+	}
+
+	user_id , parse_err := strconv.ParseUint( c.Params( "user_id" ) , 10 , 64 )
+	if parse_err != nil {
+		err = badRequest( c , "invalid user id" )
+		return
+	}
+	if user_id == security.UserFrom( c ).ID {
+		err = badRequest( c , "you cannot delete your own account" )
+		return
+	}
+
+	delete_err := models.DeleteUser( handlers.Store , user_id )
+	if errors.Is( delete_err , db.ErrNotFound ) {
+		err = notFound( c , "no such user" )
+		return
+	}
+	if delete_err != nil {
+		err = serverError( c )
+		return
+	}
+	err = c.JSON( fiber.Map{ "ok": true } )
 	return
 }

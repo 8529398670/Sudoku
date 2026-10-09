@@ -153,6 +153,12 @@ button.secondary {
   border-color: var(--border);
 }
 
+/* An action that cannot be undone. */
+button.secondary.danger {
+  color: var(--error-fg);
+  border-color: var(--error-fg);
+}
+
 button.small {
   min-height: 36px;
   padding: 0.35rem 0.6rem;

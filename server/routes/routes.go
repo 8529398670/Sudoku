@@ -96,6 +96,7 @@ func ( handlers *Handlers ) Register( app *fiber.App ) {
 	admin.Post( "/users/:user_id/reissue-login" , handlers.ReissueLogin )
 	admin.Post( "/users/:user_id/disabled" , handlers.SetUserDisabled )
 	admin.Post( "/users/:user_id/features" , handlers.SetUserFeatures )
+	admin.Post( "/users/:user_id/delete" , handlers.DeleteUser )
 	// A player's play history: visits, games, one game's journal for the
 	// replay page, and zip downloads of one game or all of them.
 	admin.Get( "/users/:user_id/history" , handlers.GetUserHistory )

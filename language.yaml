@@ -59,6 +59,8 @@ admin:
   disable_button: "Disable"
   enable_button: "Enable"
   history_button: "History"
+  delete_button: "Delete"
+  delete_confirm: "Delete {name}? This removes the account and all of its saved games, stats and play history, and it cannot be undone. To keep the history, download it first, or use Disable instead."
   table_features: "Features"
   feature_hints: "Hints: {state}"
   feature_auto_candidate: "Auto Candidate: {state}"

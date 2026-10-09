@@ -5,8 +5,11 @@
 package models
 
 import (
+	bytes "bytes"
 	strings "strings"
 	time "time"
+
+	bolt "go.etcd.io/bbolt"
 
 	db "sudoku/server/db"
 	encryption "sudoku/server/encryption"
@@ -147,6 +150,79 @@ func SetUserFeatures( store *db.Store , user_id uint64 , hints *bool , auto_cand
 			if auto_candidate != nil { user.AutoCandidateOff = *auto_candidate == false }
 			return
 		} )
+	return
+}
+
+// DeleteUser removes an account for good, together with everything stored
+// for it: sessions, login links and API keys, and the player's Sudoku
+// settings, saved games, results and play history. Disabling is the
+// reversible option; this is for an account that should not exist at all.
+//
+// It is one write transaction, so a failure part-way leaves the account
+// exactly as it was rather than half gone. A bucket added later that holds
+// per-user data has to be added here too, or deleting a user leaves it
+// behind. User ids come from a bolt sequence and are never handed out again,
+// so a stray row a racing request writes after this commits cannot surface
+// under a new account.
+func DeleteUser( store *db.Store , user_id uint64 ) ( err error ) {
+	user_key := encryption.Uint64ToBytes( user_id )
+	err = store.Update( func( tx *bolt.Tx ) ( tx_err error ) {
+		users := tx.Bucket( []byte( db.BucketUsers ) )
+		if users.Get( user_key ) == nil {
+			tx_err = db.ErrNotFound
+			return
+		}
+		if tx_err = users.Delete( user_key ); tx_err != nil { return }
+
+		// One record per player, keyed by user id.
+		for _ , name := range []string{ db.BucketSudokuSettings , db.BucketSudokuGames , db.BucketSudokuResults , db.BucketSudokuJournalIndex } {
+			if tx_err = tx.Bucket( []byte( name ) ).Delete( user_key ); tx_err != nil { return }
+		}
+
+		// Many records per player, keyed by user id plus a suffix.
+		for _ , name := range []string{ db.BucketSudokuJournal , db.BucketSudokuVisits } {
+			if tx_err = deleteKeys( tx.Bucket( []byte( name ) ) , func( key []byte , value []byte ) ( matched bool , match_err error ) {
+				matched = bytes.HasPrefix( key , user_key )
+				return
+			} ); tx_err != nil { return }
+		}
+
+		// Keyed by their own id, with the owner in a user_id field. All three
+		// record types name it the same way, so one decode covers them.
+		for _ , name := range []string{ db.BucketSessions , db.BucketLoginTokens , db.BucketAPIKeys } {
+			if tx_err = deleteKeys( tx.Bucket( []byte( name ) ) , func( key []byte , value []byte ) ( matched bool , match_err error ) {
+				owner := struct {
+					UserID uint64 `json:"user_id"`
+				}{}
+				match_err = store.DecodeValue( value , &owner )
+				matched = match_err == nil && owner.UserID == user_id
+				return
+			} ); tx_err != nil { return }
+		}
+		return
+	} )
+	return
+}
+
+// deleteKeys removes every key in bucket that match reports true for.
+// Collecting first and deleting after, as db.DeleteWhere does, keeps clear of
+// where a bolt cursor lands after a delete.
+func deleteKeys( bucket *bolt.Bucket , match func( key []byte , value []byte ) ( bool , error ) ) ( err error ) {
+	doomed := [][]byte{}
+	cursor := bucket.Cursor()
+	for key , value := cursor.First(); key != nil; key , value = cursor.Next() {
+		matched , match_err := match( key , value )
+		if match_err != nil {
+			err = match_err
+			return
+		}
+		if matched {
+			doomed = append( doomed , append( []byte( nil ) , key... ) )
+		}
+	}
+	for _ , key := range doomed {
+		if err = bucket.Delete( key ); err != nil { return }
+	}
 	return
 }
 

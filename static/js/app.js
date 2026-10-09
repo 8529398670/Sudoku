@@ -156,6 +156,23 @@ const App = {
         } },
       } );
 
+      // Gone for good, with everything stored for them -- hence the name in
+      // the question. Not offered on your own row; the server refuses that
+      // too, which is what keeps at least one admin around.
+      const deleteButton = user.id === App.currentUser.id ? null : Dom.el( "button" , {
+        class: "secondary small danger",
+        text: I18n.get( "admin.delete_button" ),
+        on: { click: async function () {
+          if ( !window.confirm( I18n.format( "admin.delete_confirm" , { name: user.display_name } ) ) ) return;
+          try {
+            await Api.deleteUser( user.id );
+            await App.refreshUsers();
+            // Their API keys went with them.
+            await Keys.refreshAll();
+          } catch ( error ) { App.showError( error.message ); }
+        } },
+      } );
+
       // Game features this player can use. Switched off, the game page does
       // not draw them at all; the player sees it on their next page load.
       const features = user.features || {};
@@ -196,7 +213,7 @@ const App = {
           ] } ),
         ] } ),
         Dom.el( "td" , { children: [
-          Dom.el( "div" , { class: "row-actions" , children: [ historyLink , reissueButton , toggleButton ] } ),
+          Dom.el( "div" , { class: "row-actions" , children: [ historyLink , reissueButton , toggleButton , deleteButton ].filter( Boolean ) } ),
         ] } ),
       ] } ) );
     } );
