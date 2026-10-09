@@ -49,6 +49,7 @@ const Keyboard = {
     if ( event.key === "Escape" ) {
       if ( typeof Menu !== "undefined" ) Menu.closeMore();
       if ( typeof Hint !== "undefined" ) Hint.close();
+      if ( this.target && this.target.closeDrawer ) this.target.closeDrawer();
       return;
     }
 

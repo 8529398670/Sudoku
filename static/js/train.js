@@ -260,6 +260,7 @@ const Drill = {
 
 const Trainer = {
   LAST_KEY: "sudoku.training.last",
+  SIDEBAR_KEY: "sudoku.training.sidebar",
   MIXED: "mixed",
   MINE_ROUNDS: 24,
   technique: "hidden_single",
@@ -313,9 +314,18 @@ const Trainer = {
     Dom.get( "drill-check" ).addEventListener( "click" , function () { Trainer.check(); } );
     Dom.get( "drill-hint" ).addEventListener( "click" , function () { Trainer.action( "hint" ); } );
     Dom.get( "drill-next" ).addEventListener( "click" , function () { Trainer.next(); } );
-    Dom.get( "train-select" ).addEventListener( "change" , function ( event ) { Trainer.choose( event.target.value ); } );
+    Layout.init( Settings.values , {
+      toast: function ( message , ms ) { Trainer.toast( message , ms ); },
+      sizeKey: "sudoku.training.board_size",
+      boardOnly: false,
+      onFullscreen: function () { Trainer.renderSidebar(); },
+    } );
+    Dom.get( "sidebar-toggle" ).addEventListener( "click" , function () { Trainer.setSidebar( !Trainer.sidebarOpen() ); } );
+    Dom.get( "sidebar-backdrop" ).addEventListener( "click" , function () { Trainer.closeDrawer(); } );
+    window.matchMedia( this.DOCKED ).addEventListener( "change" , function () { Trainer.renderSidebar(); } );
 
     this.buildList();
+    this.setSidebar( this.savedSidebar() , false );
     let last = null;
     try { last = window.localStorage.getItem( this.LAST_KEY ); } catch ( error ) { /* default */ }
     if ( last && ( last === this.MIXED || Engine.TECHNIQUE_INFO.some( function ( t ) { return t.name === last; } ) ) ) this.technique = last;
@@ -328,7 +338,6 @@ const Trainer = {
 
   buildList() {
     const list = Dom.get( "train-list" );
-    const select = Dom.get( "train-select" );
     const self = this;
     const add = function ( name , label ) {
       const button = Dom.el( "button" , {
@@ -341,17 +350,11 @@ const Trainer = {
       list.appendChild( button );
     };
     add( this.MIXED , I18n.get( "train.mixed" ) );
-    select.appendChild( Dom.el( "option" , { text: I18n.get( "train.mixed" ) , attrs: { value: this.MIXED } } ) );
     for ( let tier = 1; tier <= 4; tier += 1 ) {
-      const heading = I18n.get( "train.tier_" + tier );
-      list.appendChild( Dom.el( "p" , { class: "train-tier" , text: heading } ) );
-      const group = Dom.el( "optgroup" , { attrs: { label: heading } } );
+      list.appendChild( Dom.el( "p" , { class: "train-tier" , text: I18n.get( "train.tier_" + tier ) } ) );
       Engine.TECHNIQUE_INFO.filter( function ( t ) { return t.tier === tier; } ).forEach( function ( t ) {
-        const label = I18n.get( "hints.name." + t.name );
-        add( t.name , label );
-        group.appendChild( Dom.el( "option" , { text: label , attrs: { value: t.name } } ) );
+        add( t.name , I18n.get( "hints.name." + t.name ) );
       } );
-      select.appendChild( group );
     }
     this.renderList();
   },
@@ -371,14 +374,68 @@ const Trainer = {
       Dom.text( button.lastChild , badge );
       button.classList.toggle( "mastered" , TrainProgress.mastered( name ) );
     } );
-    Dom.get( "train-select" ).value = this.technique;
   },
 
   choose( name ) {
+    // As a drawer, the list has done its job once something is picked.
+    if ( !this.docked() ) this.setSidebar( false , false );
     if ( name === this.technique && this.current ) return;
     this.technique = name;
     try { window.localStorage.setItem( this.LAST_KEY , name ); } catch ( error ) { /* fine */ }
     this.next();
+  },
+
+  // --- the sidebar ----------------------------------------------------------------
+  //
+  // From 64rem the list docks beside the board and can be collapsed; the
+  // choice is remembered. Below that it is a drawer over the page, closed
+  // unless asked for. Fullscreen hides it either way (css/game.css).
+
+  DOCKED: "(min-width: 64rem)",
+
+  docked() {
+    return window.matchMedia( this.DOCKED ).matches;
+  },
+
+  savedSidebar() {
+    if ( !this.docked() ) return false;
+    try {
+      const saved = window.localStorage.getItem( this.SIDEBAR_KEY );
+      if ( saved !== null ) return saved === "open";
+    } catch ( error ) {
+      // Open by default.
+    }
+    return true;
+  },
+
+  sidebarOpen() {
+    return Dom.get( "app" ).classList.contains( "sidebar-open" );
+  },
+
+  // remember: false for opening and closing that is not the player's
+  // preference (the drawer closing after a pick, the first draw).
+  setSidebar( open , remember ) {
+    Dom.get( "app" ).classList.toggle( "sidebar-open" , open );
+    if ( remember !== false && this.docked() ) {
+      try { window.localStorage.setItem( this.SIDEBAR_KEY , open ? "open" : "closed" ); } catch ( error ) { /* fine */ }
+    }
+    this.renderSidebar();
+  },
+
+  closeDrawer() {
+    if ( !this.docked() && this.sidebarOpen() ) this.setSidebar( false , false );
+  },
+
+  renderSidebar() {
+    const open = this.sidebarOpen() && !Layout.isFullscreen();
+    const toggle = Dom.get( "sidebar-toggle" );
+    const label = I18n.get( open ? "train.sidebar_hide" : "train.sidebar_show" );
+    toggle.setAttribute( "aria-expanded" , open ? "true" : "false" );
+    toggle.setAttribute( "aria-label" , label );
+    toggle.setAttribute( "title" , label );
+    Dom.show( Dom.get( "sidebar-backdrop" ) , open && !this.docked() );
+    // The board changes size with the sidebar; lines drawn over it follow.
+    window.requestAnimationFrame( function () { Board.drawLines(); } );
   },
 
   // --- drills -------------------------------------------------------------------

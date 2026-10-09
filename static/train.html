@@ -19,20 +19,33 @@
 
   <div id="app" class="game-app" hidden>
     <header class="game-header">
+      <button id="sidebar-toggle" class="icon-button" type="button" aria-controls="train-sidebar" aria-expanded="false">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2" /><path d="M9.5 4.5v15" /></svg>
+      </button>
       <a class="text-button back-link" href="/" data-i18n="train.back"></a>
       <h1 class="train-heading" data-i18n="train.heading"></h1>
+      <nav class="header-actions">
+        <button id="fullscreen-button" class="icon-button" type="button">
+          <svg class="icon icon-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" /></svg>
+          <svg class="icon icon-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" /></svg>
+        </button>
+      </nav>
     </header>
 
-    <div class="train-bar">
-      <label class="train-select-label" for="train-select" data-i18n="train.select_label"></label>
-      <select id="train-select" class="train-select"></select>
-    </div>
+    <!-- The technique list. Docked beside the board on wide screens and
+         collapsible there; a drawer over the page on narrower ones. -->
+    <aside id="train-sidebar" class="train-sidebar">
+      <nav id="train-list" class="train-list" data-i18n-attr="aria-label:train.select_label"></nav>
+    </aside>
+    <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
 
     <main class="game-layout train-layout">
-      <nav id="train-list" class="train-list" data-i18n-attr="aria-label:train.select_label"></nav>
-
       <div class="board-wrap">
         <div id="board" class="board" role="grid"></div>
+        <!-- Desktop only: drag to resize, double-click to reset. layout.js. -->
+        <div id="board-resize" class="board-resize" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M20 10L10 20M20 15l-5 5M20 4L4 20" /></svg>
+        </div>
         <div id="generating-overlay" class="board-overlay" hidden>
           <span class="spinner" aria-hidden="true"></span>
           <p id="drill-waiting" data-i18n="train.loading"></p>
@@ -101,6 +114,7 @@
   <script src="/js/board.js"></script>
   <script src="/js/controls.js"></script>
   <script src="/js/keyboard.js"></script>
+  <script src="/js/layout.js"></script>
   <script src="/js/hint-explain.js"></script>
   <script src="/js/hint.js"></script>
   <script src="/js/training-seeds.js"></script>

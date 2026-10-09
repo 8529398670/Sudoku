@@ -55,7 +55,7 @@ const Play = {
     } );
     Menu.init();
     Stats.init();
-    Layout.init( Settings.values );
+    Layout.init( Settings.values , { toast: function ( message , ms ) { Play.toast( message , ms ); } } );
     this.renderAccountLink();
     this.wireLifecycle();
     Dom.get( "pause-button" ).addEventListener( "click" , this.togglePause.bind( this ) );

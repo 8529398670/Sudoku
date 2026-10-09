@@ -876,27 +876,73 @@ kbd {
 
 .back-link { display: inline-flex; align-items: center; color: var( --fg ); text-decoration: none; }
 
-.train-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 48px;
-}
-
-.game-page .train-select-label { margin: 0; color: var( --fg-muted ); font-size: 0.85rem; }
-
-.train-select {
-  flex: 1;
-  min-height: 40px;
-  padding: 0.3rem 0.5rem;
-  color: var( --fg );
+/* The technique list. On every width it is a panel fixed to the left
+   edge; below 64rem it slides in over the page as a drawer (with a
+   backdrop), and from 64rem it docks and the page makes room for it. Either
+   way #app.sidebar-open shows it -- train.js toggles that. */
+.train-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  width: min( 17rem , 85vw );
+  padding: 0.75rem 0.6rem calc( 1rem + env( safe-area-inset-bottom ) );
+  overflow-y: auto;
   background: var( --card-bg );
-  border: 1px solid var( --border );
-  border-radius: 8px;
-  font: inherit;
+  border-right: 1px solid var( --border );
+  box-shadow: var( --shadow );
+  transform: translateX( -105% );
+  transition: transform 0.18s ease;
 }
 
-.train-list { display: none; }
+#app.sidebar-open .train-sidebar { transform: none; }
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: rgba( 0 , 0 , 0 , 0.4 );
+}
+
+#sidebar-toggle[aria-expanded="true"] { color: var( --accent ); }
+
+.train-list { display: flex; flex-direction: column; gap: 2px; }
+.train-list > * { flex-shrink: 0; }
+
+.train-tier {
+  margin: 0.6rem 0 0.15rem;
+  padding: 0 0.55rem;
+  color: var( --fg-muted );
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.game-page .train-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 0;
+  padding: 0.4rem 0.55rem;
+  color: var( --fg );
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-align: left;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.game-page .train-item:hover { background: var( --hover ); }
+.game-page .train-item[aria-current="true"] { background: var( --m-pattern ); border-color: var( --hint-ring ); }
+.train-badge { color: var( --fg-muted ); font-size: 0.72rem; font-weight: 500; }
+.train-item.mastered .train-badge { color: var( --ok-fg ); font-weight: 700; }
+
+@media ( prefers-reduced-motion: reduce ) {
+  .train-sidebar { transition: none; }
+}
 
 .drill-panel {
   display: flex;
@@ -1002,6 +1048,8 @@ kbd {
     --board-size: min( var( --board-user-size , 100dvh ) , calc( 100vw - 22rem ) , calc( 100dvh - 3rem ) );
   }
 
+  .is-fullscreen .train-sidebar,
+  .is-fullscreen .sidebar-backdrop,
   .is-fullscreen .status-bar,
   .is-fullscreen .mode-toggle,
   .is-fullscreen .action-row,
@@ -1061,52 +1109,15 @@ kbd {
 }
 
 @media ( min-width: 64rem ) {
-  .train-page {
-    --board-size: min( var( --board-user-size , min( 72vh , 34rem ) ) , calc( 100vw - 40rem ) , calc( 100dvh - 9rem ) );
+  /* Docked: no drawer chrome, and the page shifts right to make room. The
+     board's budget loses the sidebar's width too. */
+  .train-sidebar { width: 15rem; box-shadow: none; }
+  .sidebar-backdrop { display: none; }
+  .train-page:has( #app.sidebar-open:not( .is-fullscreen ) ) { padding-left: 15rem; }
+
+  #app.sidebar-open:not( .is-fullscreen ) {
+    --board-size: min( var( --board-user-size , min( 72vh , 34rem ) ) , calc( 100vw - 37rem ) , calc( 100dvh - 8.5rem ) );
   }
-
-  .train-page .game-app { max-width: max( 80rem , calc( var( --board-size ) + 40rem ) ); }
-  .train-page .train-bar { display: none; }
-
-  .train-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    width: 14rem;
-    max-height: calc( 100dvh - 6rem );
-    overflow-y: auto;
-  }
-
-  .train-list > * { flex-shrink: 0; }
-
-  .train-tier {
-    margin: 0.6rem 0 0.15rem;
-    color: var( --fg-muted );
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .game-page .train-item {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-height: 0;
-    padding: 0.35rem 0.55rem;
-    color: var( --fg );
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    text-align: left;
-    font-weight: 600;
-    line-height: 1.25;
-  }
-
-  .game-page .train-item:hover { background: var( --hover ); }
-  .game-page .train-item[aria-current="true"] { background: var( --m-pattern ); border-color: var( --hint-ring ); }
-  .train-badge { color: var( --fg-muted ); font-size: 0.72rem; font-weight: 500; }
-  .train-item.mastered .train-badge { color: var( --ok-fg ); font-weight: 700; }
 }
 
 @media ( min-width: 48rem ) and ( prefers-reduced-motion: reduce ) {

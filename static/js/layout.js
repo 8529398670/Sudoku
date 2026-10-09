@@ -5,12 +5,23 @@
 // All three are desktop features. The grip and the fullscreen button are
 // hidden below the 48rem breakpoint, and the board-only class has no rules
 // there, because on a phone the number pad is the only way to play.
+//
+// The game page and the training ground both use it. options:
+//   toast      shows a short message (the page's own toast)
+//   sizeKey    where the board size is remembered; the training ground has
+//              a sidebar, so it keeps its own
+//   boardOnly  false to ignore the board-only setting (training needs its
+//              controls)
+//   onFullscreen( on )  told when fullscreen starts or ends
 const Layout = {
   SIZE_KEY: "sudoku.board_size",
   MIN_SIZE: 280,
   drag: null,
+  options: {},
 
-  init( settings ) {
+  init( settings , options ) {
+    this.options = options || {};
+    if ( this.options.sizeKey ) this.SIZE_KEY = this.options.sizeKey;
     this.restoreSize();
     const grip = Dom.get( "board-resize" );
     grip.addEventListener( "pointerdown" , this.onGripDown.bind( this ) );
@@ -27,7 +38,12 @@ const Layout = {
   },
 
   apply( settings ) {
-    Dom.get( "app" ).classList.toggle( "board-only" , settings.board_only === true );
+    const boardOnly = this.options.boardOnly !== false && settings.board_only === true;
+    Dom.get( "app" ).classList.toggle( "board-only" , boardOnly );
+  },
+
+  toast( message , milliseconds ) {
+    if ( this.options.toast ) this.options.toast( message , milliseconds );
   },
 
   // The breakpoint css/game.css switches to the desktop layout at.
@@ -121,16 +137,19 @@ const Layout = {
       app.classList.add( "is-fullscreen" );
       const root = document.documentElement;
       if ( root.requestFullscreen ) root.requestFullscreen().catch( function () {} );
-      Play.toast( I18n.get( "game.top_edge_hint" ) , 5000 );
+      this.toast( I18n.get( "game.top_edge_hint" ) , 5000 );
     }
     this.renderFullscreenButton();
+    if ( this.options.onFullscreen ) this.options.onFullscreen( this.isFullscreen() );
   },
 
   // Esc, or the browser's own exit control, leaves fullscreen without
   // going through the button.
   onFullscreenChange() {
+    const was = this.isFullscreen();
     if ( !document.fullscreenElement ) Dom.get( "app" ).classList.remove( "is-fullscreen" );
     this.renderFullscreenButton();
+    if ( was !== this.isFullscreen() && this.options.onFullscreen ) this.options.onFullscreen( this.isFullscreen() );
   },
 
   renderFullscreenButton() {
