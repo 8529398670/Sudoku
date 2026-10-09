@@ -19,6 +19,12 @@ type csrfOnlyRequest struct {
 	CSRFToken string `json:"csrf_token"`
 }
 
+type setFeaturesRequest struct {
+	Hints         *bool  `json:"hints"`
+	AutoCandidate *bool  `json:"auto_candidate"`
+	CSRFToken     string `json:"csrf_token"`
+}
+
 type setDisabledRequest struct {
 	Disabled  bool   `json:"disabled"`
 	CSRFToken string `json:"csrf_token"`
@@ -37,6 +43,7 @@ func ( handlers *Handlers ) ListUsers( c fiber.Ctx ) ( err error ) {
 			"display_name": user.DisplayName,
 			"role":         user.Role,
 			"disabled":     user.Disabled(),
+			"features":     user.Features(),
 		} )
 	}
 	err = c.JSON( rows )
@@ -159,5 +166,40 @@ func ( handlers *Handlers ) SetUserDisabled( c fiber.Ctx ) ( err error ) {
 		models.DestroyAllSessionsForUser( handlers.Store , user_id )
 	}
 	err = c.JSON( fiber.Map{ "ok": true } )
+	return
+}
+
+// SetUserFeatures switches Hints and Auto Candidate on or off for one
+// player. Their game page reads the result from /api/me on its next load.
+func ( handlers *Handlers ) SetUserFeatures( c fiber.Ctx ) ( err error ) {
+	var body setFeaturesRequest
+	if c.Bind().Body( &body ) != nil {
+		err = badRequest( c , "malformed request body" )
+		return
+	}
+	if handlers.Guard.CheckCSRF( c , body.CSRFToken ) == false {
+		err = forbidden( c , "invalid csrf token" )
+		return
+	}
+	if body.Hints == nil && body.AutoCandidate == nil {
+		err = badRequest( c , "nothing to change" )
+		return
+	}
+
+	user_id , parse_err := strconv.ParseUint( c.Params( "user_id" ) , 10 , 64 )
+	if parse_err != nil {
+		err = badRequest( c , "invalid user id" )
+		return
+	}
+	if _ , get_err := models.GetUser( handlers.Store , user_id ); get_err != nil {
+		err = notFound( c , "no such user" )
+		return
+	}
+	if models.SetUserFeatures( handlers.Store , user_id , body.Hints , body.AutoCandidate ) != nil {
+		err = serverError( c )
+		return
+	}
+	user , _ := models.GetUser( handlers.Store , user_id )
+	err = c.JSON( fiber.Map{ "ok": true , "features": user.Features() } )
 	return
 }

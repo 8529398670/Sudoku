@@ -5,6 +5,8 @@
 //
 //   host.onChange()        the panel opened, closed, or moved on -- redraw
 //   host.onApply( action ) Apply was pressed (see HintExplain.build)
+//   host.onLevel( level )  optional: the player picked another level
+//   host.onClose()         optional: the player closed the panel themselves
 //
 // Levels: 1 nudge, 2 show me, 3 answer, 4 walkthrough.
 const Hint = {
@@ -29,7 +31,7 @@ const Hint = {
       Hint.levelButtons.push( button );
       group.appendChild( button );
     } );
-    Dom.get( "hint-close" ).addEventListener( "click" , function () { Hint.close(); } );
+    Dom.get( "hint-close" ).addEventListener( "click" , function () { Hint.close( true ); } );
     Dom.get( "hint-back" ).addEventListener( "click" , function () { Hint.step( -1 ); } );
     Dom.get( "hint-next" ).addEventListener( "click" , function () { Hint.step( 1 ); } );
     Dom.get( "hint-apply" ).addEventListener( "click" , function () { Hint.apply(); } );
@@ -48,11 +50,14 @@ const Hint = {
     this.host.onChange();
   },
 
-  close() {
+  // byPlayer: closed with the close button or Escape, rather than because
+  // a move or a new puzzle made the hint stale.
+  close( byPlayer ) {
     if ( this.content === null ) return;
     this.content = null;
     Dom.show( Dom.get( "hint-panel" ) , false );
     this.host.onChange();
+    if ( byPlayer === true && this.host.onClose ) this.host.onClose();
   },
 
   setLevel( level ) {
@@ -61,6 +66,7 @@ const Hint = {
     this.frame = 0;
     this.render();
     this.host.onChange();
+    if ( this.host.onLevel ) this.host.onLevel( level );
   },
 
   step( by ) {

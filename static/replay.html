@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title data-i18n="replay.title">&nbsp;</title>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/game.css" />
+</head>
+<body class="game-page replay-page">
+  <!--
+    One game's recorded history, step by step, for an admin (replay.js).
+    The board is the game's own board.js; nothing here can change the game,
+    and "Continue from Here" opens the shown position as a new, temporary
+    game in another tab.
+  -->
+  <p id="error-banner" class="notice notice-error" hidden></p>
+
+  <div id="app" class="game-app replay-app" hidden>
+    <header class="game-header replay-header">
+      <div>
+        <a id="replay-back" class="back-link" href="/account.html" data-i18n="replay.back"></a>
+        <h1 id="replay-heading" class="replay-heading"></h1>
+        <p id="replay-sub" class="muted replay-sub"></p>
+      </div>
+      <button id="continue-button" type="button" data-i18n="replay.continue" data-i18n-attr="title:replay.continue_hint"></button>
+    </header>
+    <p id="replay-truncated" class="notice notice-warn" data-i18n="replay.truncated" hidden></p>
+    <p id="replay-partial" class="notice notice-warn" data-i18n="replay.partial" hidden></p>
+
+    <main class="replay-layout">
+      <div class="replay-board-column">
+        <div class="board-wrap">
+          <div id="board" class="board" role="grid"></div>
+        </div>
+
+        <div class="replay-controls">
+          <div class="replay-buttons">
+            <button id="step-first" class="secondary small" type="button" data-i18n-attr="aria-label:replay.first,title:replay.first">⏮</button>
+            <button id="step-prev" class="secondary small" type="button" data-i18n-attr="aria-label:replay.prev,title:replay.prev">◀</button>
+            <button id="step-play" class="small" type="button" data-i18n="replay.play"></button>
+            <button id="step-next" class="secondary small" type="button" data-i18n-attr="aria-label:replay.next,title:replay.next">▶</button>
+            <button id="step-last" class="secondary small" type="button" data-i18n-attr="aria-label:replay.last,title:replay.last">⏭</button>
+            <label class="replay-speed">
+              <span data-i18n="replay.speed_label"></span>
+              <select id="step-speed">
+                <option value="1000">1×</option>
+                <option value="500" selected>2×</option>
+                <option value="250">4×</option>
+                <option value="100">10×</option>
+              </select>
+            </label>
+          </div>
+          <input id="step-scrubber" class="replay-scrubber" type="range" min="1" max="1" value="1" />
+          <p id="step-counter" class="replay-counter"></p>
+        </div>
+
+        <div class="replay-info">
+          <p id="info-action" class="replay-action"></p>
+          <p id="info-when" class="muted"></p>
+          <p id="info-stats" class="muted"></p>
+        </div>
+      </div>
+
+      <ol id="event-list" class="replay-events"></ol>
+    </main>
+  </div>
+
+  <script src="/js/dom.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/sudoku-engine.js"></script>
+  <script src="/js/links.js"></script>
+  <script src="/js/game.js"></script>
+  <script src="/js/board.js"></script>
+  <script src="/js/replay.js"></script>
+</body>
+</html>

@@ -58,6 +58,14 @@ admin:
   reissue_button: "New link"
   disable_button: "Disable"
   enable_button: "Enable"
+  history_button: "History"
+  table_features: "Features"
+  feature_hints: "Hints: {state}"
+  feature_auto_candidate: "Auto Candidate: {state}"
+  feature_on: "on"
+  feature_off: "off"
+  feature_turn_off: "Click to hide this from the player"
+  feature_turn_on: "Click to give this back to the player"
 
 api_keys:
   heading: "API keys"
@@ -139,6 +147,8 @@ game:
   check_found_mistakes: "Mistakes found: {count}."
   link_copied: "Link copied -- anyone who opens it gets this puzzle."
   bad_link: "That link isn't a puzzle this site can open."
+  temporary_badge: "Temporary"
+  temporary_notice: "Temporary game: it isn't saved, synced or counted in your stats."
   resize_board: "Drag to resize · double-click to reset"
   top_edge_hint: "Move the pointer to the top of the window for the menu."
 
@@ -202,6 +212,8 @@ help:
   modes: "Normal mode places a number. Candidate mode pencils in small numbers that might fit -- press one again to remove it."
   auto: "Auto Candidate Mode fills in every possible candidate for you and keeps them up to date as you play. You can still cross candidates out."
   menu: "Stuck? The ⋯ menu has a hint, checks, and reveals. A hint can be a gentle nudge or a full walkthrough of the technique on your own board -- pick how much it shows first in Settings. To practise one technique at a time, open Training (the target icon)."
+  # Shown instead of menu for a player whose hints an admin has switched off.
+  menu_no_hints: "Stuck? The ⋯ menu has checks and reveals. To practise one technique at a time, open Training (the target icon)."
   layout: "On a computer, drag the board's bottom-right corner to resize it (double-click it to reset), and the fullscreen button shows just the board and number pad. The address bar always links to the puzzle you are playing -- copy it to share."
   sync: "Your games are saved as you play. Sign in to pick them up on another device."
   keyboard_heading: "Keyboard"
@@ -561,8 +573,145 @@ solved:
   heading: "Solved!"
   summary: "{difficulty} in {time}."
   details: "Mistakes: {errors} · Hints: {hints}"
+  # For a player whose hints an admin has switched off.
+  details_no_hints: "Mistakes: {errors}"
   stats: "See stats"
   new_game: "New game"
 
 print:
   heading: "Sudoku · {difficulty} · {label}"
+
+# ---------------------------------------------------------------------------
+# Play history: the admin's history page (history.html), the replay page
+# (replay.html), and the zip download. {placeholders} are filled in by
+# history-page.js, replay.js or the server's export.
+history:
+  title: "Play history"
+  back: "← Admin"
+  description: "Every visit and game this player has played while signed in, recorded move by move. Times are US Eastern."
+  download_all: "Download all"
+  totals: "{games} games · {sessions} sessions · {time} played"
+  sessions_heading: "Sessions"
+  sessions_hint: "Select a session to show only the games played in it."
+  games_heading: "Games"
+  show_all: "Show all games"
+  filtered: "Showing the games from the session that started {when}."
+  none_sessions: "No sessions recorded yet."
+  none_games: "No games recorded yet."
+  col_started: "Started (ET)"
+  col_ended: "Ended (ET)"
+  col_duration: "Length"
+  col_device: "Device"
+  col_games: "Games"
+  col_events: "Events"
+  col_game: "Game"
+  col_outcome: "Outcome"
+  col_active: "Active time"
+  col_wall: "Wall time"
+  col_mistakes: "Mistakes"
+  col_hints: "Hints"
+  col_moves: "Moves"
+  open_button: "Open"
+  download_button: "Download"
+  kind_daily: "Daily {date}"
+  kind_random: "Random"
+  load_failed: "Could not load this player's history."
+  not_admin: "Only an admin can see play history."
+  status:
+    playing: "in progress"
+    solved: "solved"
+    revealed: "revealed"
+  # Names for each recorded event, used on the replay page and in the
+  # download's moves files.
+  action:
+    open: "Opened the game"
+    place: "Placed a digit"
+    candidate: "Toggled a candidate"
+    erase: "Erased"
+    undo: "Undo"
+    auto: "Auto Candidate"
+    check_cell: "Checked a cell"
+    check_puzzle: "Checked the puzzle"
+    reveal_cell: "Revealed a cell"
+    reveal_puzzle: "Revealed the puzzle"
+    reset: "Reset the puzzle"
+    hint: "Asked for a hint"
+    hint_level: "Changed hint detail"
+    hint_apply: "Applied the hint"
+    hint_close: "Closed the hint"
+    pause: "Paused"
+    resume: "Resumed"
+    hidden: "Left the tab"
+    visible: "Came back to the tab"
+    finish: "Finished"
+  open:
+    new: "new game"
+    resume: "picked up again"
+    link: "opened from a link"
+    resync: "board re-sent (the opening was lost)"
+  hint_kind:
+    value_mistake: "pointed at a wrong digit"
+    candidate_mistake: "pointed at a missing candidate"
+    none: "no step found"
+  apply:
+    place: "placed the digit"
+    eliminate: "removed candidates"
+    restore: "restored a candidate"
+    erase: "erased a wrong digit"
+  verdict:
+    none: "no cell selected"
+    empty: "empty"
+    correct: "correct"
+    wrong: "wrong"
+  check_found: "{count} wrong"
+  auto_on: "on"
+  auto_off: "off"
+  export:
+    readme: |
+      Sudoku play history export. All times are US Eastern (America/New_York),
+      written as YYYY-MM-DD HH:MM:SS.
+
+      summary.csv           One row per game.
+                            started_et / ended_et: the first recorded event, and
+                            when the game was finished (blank while it is still
+                            in progress). last_activity_et: its latest event.
+                            active_time: the in-game clock, which stops while the
+                            game is paused or the tab is hidden, summed across
+                            resets. wall_time: from started_et to ended_et, or to
+                            last_activity_et for a game still in progress.
+                            mistakes, hints_requested, hints_applied,
+                            cells_revealed and the move counts are totals over
+                            the whole game.
+      sessions.csv          One row per visit (a page load), with its device.
+                            Sessions are labelled S1, S2, ... oldest first.
+      games/<id>-moves.csv  Every recorded event of one game, in order: its time,
+                            the game clock, the session, what happened, the cell
+                            (r = row, c = column, from 1), the digit, details,
+                            the running mistake and hint counts, and the board
+                            after it as 81 digits, row by row (0 = empty).
+      games/<id>.json       The same game as data: the summary, the readable
+                            moves, and the raw events. Raw change triples are
+                            [field, cell, value] with field 0 values, 1 notes,
+                            2 struck-out candidates, 3 wrong marks, 4 revealed;
+                            note masks use bit d-1 for digit d.
+
+replay:
+  title: "Replay"
+  back: "← History"
+  first: "First step"
+  prev: "Previous step"
+  next: "Next step"
+  last: "Last step"
+  play: "Play"
+  pause: "Pause"
+  speed_label: "Speed"
+  step: "Step {n} of {total}"
+  continue: "Continue from Here"
+  continue_hint: "Opens this board in a new tab as a fresh, temporary game."
+  clock: "Clock {time}"
+  mistakes: "Mistakes {count}"
+  hints: "Hints {count}"
+  session: "Session {n} · {device}"
+  load_failed: "Could not load this game."
+  truncated: "This game hit the recording limit; later moves were not kept."
+  partial: "The start of this game wasn't recorded, so the replay builds up from the puzzle's givens. Moves made before the first recorded one are missing."

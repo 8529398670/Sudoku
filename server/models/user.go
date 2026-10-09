@@ -26,6 +26,21 @@ type User struct {
 	Role        string     `json:"role"`
 	CreatedAt   time.Time  `json:"created_at"`
 	DisabledAt  *time.Time `json:"disabled_at,omitempty"`
+
+	// Game features an admin has switched off for this player. Stored as
+	// "off" so every existing record, and every new one, has them on.
+	HintsOff         bool `json:"hints_off,omitempty"`
+	AutoCandidateOff bool `json:"auto_candidate_off,omitempty"`
+}
+
+// Features is the game page's view of what this player may use. A
+// switched-off feature is not greyed out there -- it is not drawn at all.
+func ( user *User ) Features() ( features map[string]bool ) {
+	features = map[string]bool{
+		"hints":          user.HintsOff == false,
+		"auto_candidate": user.AutoCandidateOff == false,
+	}
+	return
 }
 
 func ( user *User ) Disabled() ( result bool ) {
@@ -116,6 +131,20 @@ func SetUserDisabled( store *db.Store , user_id uint64 , disabled bool ) ( err e
 			} else {
 				user.DisabledAt = nil
 			}
+			return
+		} )
+	return
+}
+
+// SetUserFeatures switches game features on or off for one player; a nil
+// leaves that feature as it is.
+func SetUserFeatures( store *db.Store , user_id uint64 , hints *bool , auto_candidate *bool ) ( err error ) {
+	err = store.UpdateValue( db.BucketUsers , encryption.Uint64ToBytes( user_id ) ,
+		func() any { return &User{} } ,
+		func( item any ) ( mutate_err error ) {
+			user := item.( *User )
+			if hints != nil { user.HintsOff = *hints == false }
+			if auto_candidate != nil { user.AutoCandidateOff = *auto_candidate == false }
 			return
 		} )
 	return

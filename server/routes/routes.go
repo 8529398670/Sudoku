@@ -70,6 +70,7 @@ func ( handlers *Handlers ) Register( app *fiber.App ) {
 	sudoku.Post( "/games" , handlers.SaveSudokuGame )
 	sudoku.Get( "/results" , handlers.ListSudokuResults )
 	sudoku.Post( "/results" , handlers.AddSudokuResults )
+	sudoku.Post( "/journal" , handlers.SaveSudokuJournal )
 
 	// API keys: any signed-in user manages their own.
 	//
@@ -94,6 +95,13 @@ func ( handlers *Handlers ) Register( app *fiber.App ) {
 	admin.Post( "/users" , handlers.CreateUser )
 	admin.Post( "/users/:user_id/reissue-login" , handlers.ReissueLogin )
 	admin.Post( "/users/:user_id/disabled" , handlers.SetUserDisabled )
+	admin.Post( "/users/:user_id/features" , handlers.SetUserFeatures )
+	// A player's play history: visits, games, one game's journal for the
+	// replay page, and zip downloads of one game or all of them.
+	admin.Get( "/users/:user_id/history" , handlers.GetUserHistory )
+	admin.Get( "/users/:user_id/history/download" , handlers.DownloadUserHistory )
+	admin.Get( "/users/:user_id/history/games/:game_id" , handlers.GetUserJournal )
+	admin.Get( "/users/:user_id/history/games/:game_id/download" , handlers.DownloadUserGame )
 
 	// Admin view of every key in the app -- "who has standing access" -- and
 	// the ability to revoke someone else's. Its own prefix for the same reason

@@ -156,6 +156,33 @@ const App = {
         } },
       } );
 
+      // Game features this player can use. Switched off, the game page does
+      // not draw them at all; the player sees it on their next page load.
+      const features = user.features || {};
+      const featureButton = function ( name , labelKey ) {
+        const on = features[ name ] !== false;
+        return Dom.el( "button" , {
+          class: "small feature-toggle" + ( on ? "" : " secondary" ),
+          text: I18n.format( labelKey , { state: I18n.get( on ? "admin.feature_on" : "admin.feature_off" ) } ),
+          attrs: { type: "button" , "aria-pressed": on ? "true" : "false" , title: I18n.get( on ? "admin.feature_turn_off" : "admin.feature_turn_on" ) },
+          on: { click: async function () {
+            try {
+              const change = {};
+              change[ name ] = !on;
+              await Api.setFeatures( user.id , change );
+              await App.refreshUsers();
+            } catch ( error ) { App.showError( error.message ); }
+          } },
+        } );
+      };
+
+      // Every move this player has made while signed in -- history.html.
+      const historyLink = Dom.el( "a" , {
+        class: "button secondary small",
+        text: I18n.get( "admin.history_button" ),
+        attrs: { href: "/history.html?user=" + encodeURIComponent( user.id ) },
+      } );
+
       // Built with createElement + textContent, never an HTML string: a
       // display name is user-controlled input.
       body.appendChild( Dom.el( "tr" , { children: [
@@ -163,7 +190,13 @@ const App = {
         Dom.el( "td" , { text: user.role } ),
         Dom.el( "td" , { text: I18n.get( statusKey ) } ),
         Dom.el( "td" , { children: [
-          Dom.el( "div" , { class: "row-actions" , children: [ reissueButton , toggleButton ] } ),
+          Dom.el( "div" , { class: "row-actions" , children: [
+            featureButton( "hints" , "admin.feature_hints" ),
+            featureButton( "auto_candidate" , "admin.feature_auto_candidate" ),
+          ] } ),
+        ] } ),
+        Dom.el( "td" , { children: [
+          Dom.el( "div" , { class: "row-actions" , children: [ historyLink , reissueButton , toggleButton ] } ),
         ] } ),
       ] } ) );
     } );

@@ -34,6 +34,7 @@ func ( handlers *Handlers ) GetMe( c fiber.Ctx ) ( err error ) {
 		"account_role":     user.Role,
 		"auth":             actor.Method(),
 		"api_keys_enabled": handlers.Config.APIKeysEnabled,
+		"features":         user.Features(),
 	}
 	// Only a session has a CSRF token. A key-authenticated request has no
 	// ambient credential to protect, so there is nothing to hand back -- see

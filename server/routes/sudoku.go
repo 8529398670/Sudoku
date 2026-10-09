@@ -167,3 +167,52 @@ func ( handlers *Handlers ) AddSudokuResults( c fiber.Ctx ) ( err error ) {
 	err = c.JSON( fiber.Map{ "ok": true , "added": added } )
 	return
 }
+
+type sudokuJournalRequest struct {
+	SessionID string                `json:"session_id"`
+	GameID    string                `json:"game_id"`
+	Events    []models.JournalEvent `json:"events"`
+	CSRFToken string                `json:"csrf_token"`
+}
+
+// SaveSudokuJournal appends to the play history an admin can review (see
+// models/sudoku_journal.go). Events already stored are skipped, so the
+// client simply resends anything it has not seen acknowledged.
+func ( handlers *Handlers ) SaveSudokuJournal( c fiber.Ctx ) ( err error ) {
+	var body sudokuJournalRequest
+	if c.Bind().Body( &body ) != nil {
+		err = badRequest( c , "malformed request body" )
+		return
+	}
+	if handlers.Guard.CheckCSRF( c , body.CSRFToken ) == false {
+		err = forbidden( c , "invalid csrf token" )
+		return
+	}
+	if models.ValidSudokuSessionID( body.SessionID ) == false {
+		err = badRequest( c , "invalid session id" )
+		return
+	}
+	if models.ValidSudokuGameID( body.GameID ) == false {
+		err = badRequest( c , "invalid game id" )
+		return
+	}
+	if len( body.Events ) == 0 || len( body.Events ) > models.SudokuMaxJournalEventsPerPost {
+		err = badRequest( c , "expected 1-500 events" )
+		return
+	}
+	for index := range body.Events {
+		if models.ValidJournalEvent( &body.Events[ index ] ) == false {
+			err = badRequest( c , "invalid event" )
+			return
+		}
+	}
+
+	user := security.UserFrom( c )
+	added , keyframe , save_err := models.AppendJournal( handlers.Store , user.ID , body.SessionID , c.Get( "User-Agent" ) , body.GameID , body.Events )
+	if save_err != nil {
+		err = serverError( c )
+		return
+	}
+	err = c.JSON( fiber.Map{ "ok": true , "added": added , "keyframe": keyframe } )
+	return
+}

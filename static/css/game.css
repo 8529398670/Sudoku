@@ -1191,3 +1191,119 @@ kbd {
   .cell.edge-bottom { border-bottom-color: #000000; }
   .cell:not( .given ) .value, .notes { visibility: hidden !important; }
 }
+
+/* --- the admin's replay page (replay.html) ---------------------------------- */
+
+.replay-header {
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  gap: 1rem;
+}
+
+.replay-heading { font-size: 1.2rem; }
+.replay-sub { margin: 0; }
+
+.replay-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.replay-board-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.replay-controls {
+  width: var( --board-size );
+  max-width: 100%;
+}
+
+.replay-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.replay-buttons #step-play { min-width: 5rem; }
+
+.replay-speed {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var( --fg-muted );
+}
+
+.replay-speed select { min-height: 36px; padding: 0 0.4rem; width: auto; }
+
+.replay-scrubber { width: 100%; margin: 0.5rem 0 0; }
+
+.replay-counter { margin: 0.25rem 0 0; font-size: 0.85rem; color: var( --fg-muted ); text-align: center; }
+
+.replay-info { width: var( --board-size ); max-width: 100%; }
+.replay-info p { margin: 0 0 0.2rem; }
+.replay-action { font-weight: 600; }
+
+.replay-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  border: 1px solid var( --border );
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.replay-events li {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var( --border );
+  cursor: pointer;
+}
+
+.replay-events li:hover { background: var( --peer-bg ); color: var( --given-fg ); }
+.replay-events li.is-current { background: var( --selected-bg ); color: #121212; }
+
+.replay-events li.session-start {
+  cursor: default;
+  font-weight: 600;
+  color: var( --fg-muted );
+  background: var( --bg );
+}
+
+.replay-events .event-n { min-width: 2.5rem; color: var( --fg-muted ); text-align: right; }
+.replay-events li.is-current .event-n { color: inherit; }
+.replay-events .event-time { min-width: 4.5rem; font-variant-numeric: tabular-nums; }
+
+/* The temporary-game badge on the game page (Continue from Here). */
+.temporary-badge {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var( --warn-fg );
+  background: var( --warn-bg );
+}
+
+@media ( min-width: 50rem ) {
+  .replay-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .replay-board-column { flex: 0 0 auto; }
+
+  .replay-events {
+    flex: 1 1 18rem;
+    min-width: 18rem;
+    max-height: calc( var( --board-size ) + 10rem );
+  }
+}

@@ -140,13 +140,15 @@ const Menu = {
     if ( resolve ) resolve( answer );
   },
 
-  showSolved( game ) {
+  // hints: false when this player has no hints, so the summary leaves the
+  // count out rather than show a feature they never had.
+  showSolved( game , hints ) {
     Dom.text( Dom.get( "solved-summary" ) , I18n.format( "solved.summary" , {
       difficulty: I18n.get( "game.difficulty_" + game.meta.difficulty ),
       // The same rounding as the recorded result, so this matches the stats.
       time: game.formatDuration( Math.round( game.elapsedMs() / 1000 ) ),
     } ) );
-    Dom.text( Dom.get( "solved-details" ) , I18n.format( "solved.details" , {
+    Dom.text( Dom.get( "solved-details" ) , I18n.format( hints === false ? "solved.details_no_hints" : "solved.details" , {
       errors: game.errors,
       hints: game.hints,
     } ) );

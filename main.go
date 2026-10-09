@@ -20,6 +20,9 @@ import (
 	runtime "runtime"
 	syscall "syscall"
 	time "time"
+	// The admin's history export is in US Eastern time; the Alpine image and
+	// the portable binaries have no system zoneinfo to find it in.
+	_ "time/tzdata"
 
 	fiber "github.com/gofiber/fiber/v3"
 

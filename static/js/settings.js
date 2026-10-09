@@ -116,6 +116,15 @@ const Settings = {
     } );
   },
 
+  // Takes a setting out of the dialog entirely, when the player cannot use
+  // the feature it controls. Its saved value is kept, so it is back as it
+  // was if the feature is switched on again; callers check the feature.
+  hide( name ) {
+    const input = this.inputs[ name ];
+    if ( input && input.closest( "li" ) ) input.closest( "li" ).remove();
+    delete this.inputs[ name ];
+  },
+
   get( name ) {
     return this.values[ name ] === true;
   },

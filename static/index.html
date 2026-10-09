@@ -73,6 +73,7 @@
 
     <div class="status-bar">
       <span id="game-label" class="game-label"></span>
+      <span id="temporary-badge" class="temporary-badge" data-i18n="game.temporary_badge" data-i18n-attr="title:game.temporary_notice" hidden></span>
       <span id="error-counter" class="error-counter" hidden>
         <span data-i18n="game.errors_label"></span>
         <span id="error-count" class="error-count"></span>
@@ -136,7 +137,7 @@
           </button>
           <button id="undo-button" type="button" class="action-button" data-i18n="game.undo"></button>
         </div>
-        <label class="check-row" for="auto-candidate">
+        <label id="auto-candidate-row" class="check-row" for="auto-candidate">
           <input id="auto-candidate" type="checkbox" />
           <span data-i18n="game.auto_candidate"></span>
         </label>
@@ -170,7 +171,7 @@
     <ul id="settings-list" class="settings-list"></ul>
     <h3 class="section-label" data-i18n="settings.appearance"></h3>
     <ul id="appearance-list" class="settings-list"></ul>
-    <h3 class="section-label" data-i18n="settings.hints"></h3>
+    <h3 id="hint-settings-heading" class="section-label" data-i18n="settings.hints"></h3>
     <div id="level-settings"></div>
     <div class="dialog-actions">
       <button type="button" data-close data-i18n="settings.close"></button>
@@ -181,8 +182,8 @@
     <h2 id="help-heading" class="dialog-title" data-i18n="help.heading"></h2>
     <p data-i18n="help.rules"></p>
     <p data-i18n="help.modes"></p>
-    <p data-i18n="help.auto"></p>
-    <p data-i18n="help.menu"></p>
+    <p id="help-auto" data-i18n="help.auto"></p>
+    <p id="help-menu" data-i18n="help.menu"></p>
     <p data-i18n="help.layout"></p>
     <p data-i18n="help.sync"></p>
     <h3 class="section-label" data-i18n="help.keyboard_heading"></h3>
@@ -193,7 +194,7 @@
       <div><dt><kbd data-i18n="help.key_arrows"></kbd></dt><dd data-i18n="help.does_arrows"></dd></div>
       <div><dt><kbd data-i18n="help.key_erase"></kbd></dt><dd data-i18n="help.does_erase"></dd></div>
       <div><dt><kbd data-i18n="help.key_undo"></kbd></dt><dd data-i18n="help.does_undo"></dd></div>
-      <div><dt><kbd data-i18n="help.key_hint"></kbd></dt><dd data-i18n="help.does_hint"></dd></div>
+      <div id="help-key-hint"><dt><kbd data-i18n="help.key_hint"></kbd></dt><dd data-i18n="help.does_hint"></dd></div>
       <div><dt><kbd data-i18n="help.key_escape"></kbd></dt><dd data-i18n="help.does_escape"></dd></div>
     </dl>
     <div class="dialog-actions">
@@ -241,6 +242,7 @@
   <script src="/js/api.js"></script>
   <script src="/js/sudoku-engine.js"></script>
   <script src="/js/sync.js"></script>
+  <script src="/js/journal.js"></script>
   <script src="/js/generator.js"></script>
   <script src="/js/links.js"></script>
   <script src="/js/game.js"></script>

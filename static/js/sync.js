@@ -24,6 +24,7 @@ const SyncStore = {
     current: "sudoku.current",
     results: "sudoku.results",
     owner: "sudoku.owner",
+    journal: "sudoku.journal",
   },
   MAX_GAMES: 20,
   MAX_RESULTS: 2000,
@@ -229,8 +230,7 @@ const SyncStore = {
       const entry = self.games[ id ];
       if ( !entry ) return;
       Api.saveSudokuGame( entry , id === self.currentId , keepalive ).catch( function ( error ) {
-        // A refusal will not change on retry; a network failure might.
-        if ( error.status && error.status < 500 ) return;
+        if ( Api.isRetryable( error ) === false ) return;
         self.dirty[ id ] = true;
         self.schedulePush( self.RETRY_DELAY_MS );
       } );

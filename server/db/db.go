@@ -8,6 +8,7 @@
 package db
 
 import (
+	bytes "bytes"
 	json "encoding/json"
 	errors "errors"
 	fmt "fmt"
@@ -37,11 +38,20 @@ const (
 	BucketSudokuSettings = "sudoku_settings"
 	BucketSudokuGames    = "sudoku_games"
 	BucketSudokuResults  = "sudoku_results"
+
+	// Play history, kept for the admin. The journal is one record per player
+	// per puzzle (user id + game id) and is never pruned; the index is one
+	// record per player summarising every journal, so listing them never
+	// decodes the logs; a visit is one page load (user id + session id).
+	BucketSudokuJournal      = "sudoku_journal"
+	BucketSudokuJournalIndex = "sudoku_journal_index"
+	BucketSudokuVisits       = "sudoku_visits"
 )
 
 var bucketNames = []string{
 	BucketUsers , BucketSessions , BucketLoginTokens , BucketAPIKeys , BucketMeta ,
 	BucketSudokuSettings , BucketSudokuGames , BucketSudokuResults ,
+	BucketSudokuJournal , BucketSudokuJournalIndex , BucketSudokuVisits ,
 }
 
 type Store struct {
@@ -153,6 +163,27 @@ func ( store *Store ) ForEach( bucket string , newItem func() any , visit func( 
 	err = store.bolt.View( func( tx *bolt.Tx ) ( tx_err error ) {
 		cursor := tx.Bucket( []byte( bucket ) ).Cursor()
 		for key , value := cursor.First(); key != nil; key , value = cursor.Next() {
+			item := newItem()
+			if decode_err := store.decode( value , item ); decode_err != nil {
+				tx_err = decode_err
+				return
+			}
+			key_copy := append( []byte( nil ) , key... )
+			if visit( key_copy , item ) == false {
+				return
+			}
+		}
+		return
+	} )
+	return
+}
+
+// ForEachPrefix is ForEach over only the keys that start with prefix -- a
+// player's journals or visits, which share their user id as a key prefix.
+func ( store *Store ) ForEachPrefix( bucket string , prefix []byte , newItem func() any , visit func( key []byte , item any ) bool ) ( err error ) {
+	err = store.bolt.View( func( tx *bolt.Tx ) ( tx_err error ) {
+		cursor := tx.Bucket( []byte( bucket ) ).Cursor()
+		for key , value := cursor.Seek( prefix ); key != nil && bytes.HasPrefix( key , prefix ); key , value = cursor.Next() {
 			item := newItem()
 			if decode_err := store.decode( value , item ); decode_err != nil {
 				tx_err = decode_err

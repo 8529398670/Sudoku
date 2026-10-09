@@ -208,6 +208,7 @@ th, td {
 th { color: var(--fg-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
 
 td .row-actions { display: flex; gap: 0.4rem; }
+td .row-actions button, td .row-actions a { white-space: nowrap; }
 
 @media (min-width: 40rem) {
   .app-header {
@@ -248,3 +249,64 @@ td .row-actions { display: flex; gap: 0.4rem; }
 }
 
 .back-link:hover { text-decoration: underline; }
+
+/* A link that does a button's job (downloads, opening a page). */
+a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+a.button.secondary {
+  color: var(--fg);
+  background: transparent;
+  border-color: var(--border);
+}
+
+a.button.small {
+  min-height: 36px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+/* The play history page (history.html). Its tables are wide, so the page
+   is too; times and the actions never wrap. */
+.history-page main { max-width: 72rem; }
+.history-page td.nowrap { white-space: nowrap; }
+.history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.history-head h2 { margin: 0; }
+.history-totals { margin: 0.5rem 0 0; }
+
+tr.is-pickable { cursor: pointer; }
+tr.is-pickable:hover td { background: var(--bg); }
+tr.is-picked td { background: var(--ok-bg); }
+
+.history-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.history-filter[hidden] { display: none; }
+.history-filter p { margin: 0; }
+
+.outcome-solved { color: var(--ok-fg); font-weight: 600; }
+.outcome-revealed { color: var(--warn-fg); font-weight: 600; }
+.outcome-playing { color: var(--fg-muted); }

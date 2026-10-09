@@ -3,6 +3,8 @@
 //
 //   /daily/2026-10-08/hard    that day's daily
 //   /hard/<code>              any other puzzle
+//   /continue#<state>         a temporary game handed over by the admin's
+//                             replay page; the whole state is in the fragment
 //
 // The code is the puzzle itself, not the seed that generated it. A seed
 // only means something to the generator that used it, and the generator
@@ -98,5 +100,29 @@ const Links = {
 
   urlFor( meta , puzzle ) {
     return window.location.origin + this.pathFor( meta , puzzle );
+  },
+
+  isContinuePath( pathname ) {
+    return String( pathname ).replace( /\/+$/ , "" ) === "/continue";
+  },
+
+  // state is a serialized game (Game.serialize's shape), which is plain
+  // ASCII, so btoa can take it as it is.
+  continuePath( state ) {
+    const code = window.btoa( JSON.stringify( state ) ).replace( /\+/g , "-" ).replace( /\//g , "_" ).replace( /=+$/ , "" );
+    return "/continue#" + code;
+  },
+
+  // The state from a /continue fragment, or null. The caller still checks
+  // it with Game.isValidState before trusting it.
+  parseContinue( hash ) {
+    const code = String( hash || "" ).replace( /^#/ , "" );
+    if ( /^[A-Za-z0-9_-]{20,20000}$/.test( code ) === false ) return null;
+    try {
+      const state = JSON.parse( window.atob( code.replace( /-/g , "+" ).replace( /_/g , "/" ) ) );
+      return state && typeof state === "object" ? state : null;
+    } catch ( error ) {
+      return null;
+    }
   },
 };

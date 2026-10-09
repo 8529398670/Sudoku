@@ -32,6 +32,14 @@ const Api = {
     return payload;
   },
 
+  // Whether a failed call is worth sending again. A network failure, a
+  // server error, a timeout or "too many requests" will pass; any other
+  // refusal (a bad body, signed out, forbidden) will be the same next time.
+  isRetryable( error ) {
+    const status = error && error.status;
+    return !status || status >= 500 || status === 429 || status === 408;
+  },
+
   // Any state-changing call carries the per-session CSRF token in the body.
   // Wrapping it here means a new endpoint cannot forget it.
   async post( path , body , options ) {
@@ -60,6 +68,8 @@ const Api = {
   createUser( name , role )    { return this.post( "/api/admin/users" , { display_name: name , role: role } ); },
   reissueLogin( userId )       { return this.post( "/api/admin/users/" + userId + "/reissue-login" ); },
   setDisabled( userId , flag ) { return this.post( "/api/admin/users/" + userId + "/disabled" , { disabled: flag } ); },
+  // change: { hints: bool } and/or { auto_candidate: bool }
+  setFeatures( userId , change ) { return this.post( "/api/admin/users/" + userId + "/features" , change ); },
 
   // API keys. createKey's expiresInDays is passed through as-is including null,
   // because the server reads absent as "use the default" and 0 as "never
@@ -83,4 +93,18 @@ const Api = {
   },
   sudokuResults()              { return this.request( "/api/sudoku/results" ); },
   addSudokuResults( results )  { return this.post( "/api/sudoku/results" , { results: results } ); },
+  // journal.js is the only caller.
+  saveJournal( sessionId , gameId , events , keepalive ) {
+    return this.post( "/api/sudoku/journal" , { session_id: sessionId , game_id: gameId , events: events } , { keepalive: keepalive } );
+  },
+
+  // A player's play history, for the admin pages.
+  userHistory( userId )        { return this.request( "/api/admin/users/" + userId + "/history" ); },
+  userJournal( userId , gameId ) {
+    return this.request( "/api/admin/users/" + userId + "/history/games/" + encodeURIComponent( gameId ) );
+  },
+  historyDownloadPath( userId , gameId ) {
+    const base = "/api/admin/users/" + userId + "/history";
+    return gameId ? base + "/games/" + encodeURIComponent( gameId ) + "/download" : base + "/download";
+  },
 };

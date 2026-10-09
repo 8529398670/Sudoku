@@ -234,6 +234,20 @@ const Game = {
     return { changed: true };
   },
 
+  // Turns Auto Candidate off without making a move, for a player who is not
+  // allowed it: the candidates it was showing become their own pencil
+  // marks, so the board looks exactly as it did. Undo is cleared because
+  // every snapshot in it would switch Auto Candidate back on.
+  dropAuto() {
+    if ( this.auto === false ) return;
+    for ( let i = 0; i < 81; i += 1 ) {
+      this.notes[ i ] = this.values[ i ] === 0 ? this.autoCache[ i ] & ~this.struck[ i ] : 0;
+    }
+    this.struck = new Array( 81 ).fill( 0 );
+    this.auto = false;
+    this.undoStack = [];
+  },
+
   // Puts a wrongly crossed-out candidate back.
   restoreCandidate( cell , digit ) {
     if ( this.isLocked( cell ) || this.values[ cell ] !== 0 ) return { changed: false };

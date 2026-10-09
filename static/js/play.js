@@ -10,7 +10,16 @@ const Play = {
   manualPause: false,
   generating: false,
   hintCells: null,
+  hintTechnique: "",
   toastTimer: null,
+  // A game opened with "Continue from Here" on the admin's replay page:
+  // played like any other, but never saved, synced, recorded, or counted.
+  temporary: false,
+  continueHash: "",
+  // What this player may use, from /api/me. An admin can switch either off
+  // per player; a switched-off feature is not drawn at all. Signed-out
+  // players have both.
+  features: { hints: true , auto_candidate: true },
 
   async init() {
     // The training ground is its own page; /train is the friendly address.
@@ -36,7 +45,14 @@ const Play = {
       // The server is unreachable: play signed out from local storage.
     }
     this.me = me;
+    if ( me.authenticated && me.features ) {
+      this.features = {
+        hints: me.features.hints !== false,
+        auto_candidate: me.features.auto_candidate !== false,
+      };
+    }
     await SyncStore.load( me );
+    Journal.init( function () { return SyncStore.signedIn && Play.temporary === false; } );
 
     Settings.init( SyncStore.settings , this.onSettingChanged.bind( this ) );
     Generator.init();
@@ -52,8 +68,11 @@ const Play = {
     Hint.init( {
       onChange: function () { Play.render(); },
       onApply: function ( action ) { Play.applyHint( action ); },
+      onLevel: function ( level ) { Journal.record( "hint_level" , { lv: level } ); },
+      onClose: function () { Journal.record( "hint_close" ); },
     } );
     Menu.init();
+    this.applyFeatures();
     Stats.init();
     Layout.init( Settings.values , { toast: function ( message , ms ) { Play.toast( message , ms ); } } );
     this.renderAccountLink();
@@ -80,6 +99,7 @@ const Play = {
   async startGame( kind , difficulty , date , history ) {
     const day = date || Generator.today();
     this.leaveCurrent();
+    this.temporary = false;
     if ( kind === "daily" ) {
       const existing = SyncStore.game( Generator.dailyId( day , difficulty ) );
       if ( Game.isValidState( existing ) ) {
@@ -92,9 +112,9 @@ const Play = {
       const entry = kind === "daily"
         ? await Generator.daily( difficulty , day )
         : await Generator.random( difficulty );
-      Game.create( entry , { auto: Settings.get( "start_auto_candidate" ) } );
+      Game.create( entry , { auto: this.startsAuto() } );
       this.setGenerating( false );
-      this.afterLoad( history );
+      this.afterLoad( history , "new" );
     } catch ( error ) {
       this.setGenerating( false );
       this.toast( I18n.get( "game.generate_failed" ) );
@@ -104,20 +124,49 @@ const Play = {
 
   loadGame( saved , history ) {
     Game.load( saved );
-    this.afterLoad( history );
+    this.afterLoad( history , "resume" );
   },
 
-  afterLoad( history ) {
+  // reason is what the play history records: new | resume | link.
+  afterLoad( history , reason ) {
+    if ( this.features.auto_candidate === false ) Game.dropAuto();
     this.hintCells = null;
     Hint.close();
     this.manualPause = false;
     this.setMode( "normal" );
     this.renderHeader();
     this.save( true );
-    this.syncUrl( history || "push" );
+    Journal.open( reason || "resume" );
+    if ( this.temporary === false ) this.syncUrl( history || "push" );
     if ( Game.playing() && document.hidden === false ) Game.startClock();
     this.render();
     Generator.prefetch( Game.meta.difficulty );
+  },
+
+  // --- features the admin can switch off --------------------------------------
+
+  // Hides everything to do with a feature this player cannot use: its
+  // controls, its setting, and its mentions in Help. Only ever hides --
+  // language.yaml may already have hidden some of these, and that stands.
+  applyFeatures() {
+    if ( this.features.hints === false ) {
+      Hint.close();
+      Dom.show( document.querySelector( '#more-menu [data-action="hint"]' ) , false );
+      Dom.show( Dom.get( "hint-settings-heading" ) , false );
+      Dom.show( Dom.get( "level-settings" ) , false );
+      Dom.show( Dom.get( "help-key-hint" ) , false );
+      Dom.text( Dom.get( "help-menu" ) , I18n.get( "help.menu_no_hints" ) );
+      Dom.show( Dom.get( "help-menu" ) , I18n.get( "help.menu_no_hints" ) !== "" );
+    }
+    if ( this.features.auto_candidate === false ) {
+      Dom.show( Dom.get( "auto-candidate-row" ) , false );
+      Dom.show( Dom.get( "help-auto" ) , false );
+      Settings.hide( "start_auto_candidate" );
+    }
+  },
+
+  startsAuto() {
+    return this.features.auto_candidate && Settings.get( "start_auto_candidate" );
   },
 
   // --- the address bar -------------------------------------------------------
@@ -144,6 +193,7 @@ const Play = {
   async openFromUrl() {
     const path = window.location.pathname;
     if ( Links.isGamePath( path ) === false || this.generating ) return false;
+    if ( Links.isContinuePath( path ) ) return this.openContinue();
     if ( Game.meta !== null && path === this.currentPath() ) return true;
 
     const link = Links.parse( path );
@@ -156,14 +206,16 @@ const Play = {
       if ( Game.isValidState( saved ) === false ) saved = SyncStore.findByPuzzle( link.puzzle );
       if ( Game.isValidState( saved ) ) {
         this.leaveCurrent();
+        this.temporary = false;
         this.loadGame( saved , "replace" );
         return true;
       }
       const entry = Generator.fromPuzzle( link.difficulty , link.puzzle );
       if ( entry !== null ) {
         this.leaveCurrent();
-        Game.create( entry , { auto: Settings.get( "start_auto_candidate" ) } );
-        this.afterLoad( "replace" );
+        this.temporary = false;
+        Game.create( entry , { auto: this.startsAuto() } );
+        this.afterLoad( "replace" , "link" );
         return true;
       }
     }
@@ -171,6 +223,27 @@ const Play = {
     this.toast( I18n.get( "game.bad_link" ) , 6000 );
     window.history.replaceState( null , "" , this.currentPath() );
     return false;
+  },
+
+  // /continue#<state>: a board handed over by the replay page. The state is
+  // in the fragment, so it never reaches the server, and a refresh starts
+  // the same position again. The address bar keeps it for as long as this
+  // game is on screen.
+  openContinue() {
+    const state = Links.parseContinue( window.location.hash );
+    if ( state === null || Game.isValidState( state ) === false ) {
+      this.toast( I18n.get( "game.bad_link" ) , 6000 );
+      window.history.replaceState( null , "" , "/" );
+      return false;
+    }
+    if ( this.temporary && Game.meta !== null && this.continueHash === window.location.hash ) return true;
+    this.leaveCurrent();
+    this.temporary = true;
+    this.continueHash = window.location.hash;
+    Game.load( state );
+    this.afterLoad( "replace" );
+    this.toast( I18n.get( "game.temporary_notice" ) , 6000 );
+    return true;
   },
 
   // Any day's daily can be opened from its link, up to tomorrow -- it is
@@ -213,7 +286,7 @@ const Play = {
   },
 
   save( makeCurrent ) {
-    if ( Game.meta === null ) return;
+    if ( Game.meta === null || this.temporary ) return;
     SyncStore.saveGame( Game.serialize() , makeCurrent );
   },
 
@@ -258,26 +331,29 @@ const Play = {
     if ( this.canPlay() === false ) return;
     let mode = this.mode;
     if ( swapMode ) mode = mode === "normal" ? "candidate" : "normal";
-    this.after( mode === "normal"
-      ? Game.setValue( Game.selected , digit , Settings.values )
-      : Game.toggleCandidate( Game.selected , digit ) );
+    const cell = Game.selected;
+    if ( mode === "normal" ) this.after( Game.setValue( cell , digit , Settings.values ) , "place" , { c: cell , d: digit } );
+    else this.after( Game.toggleCandidate( cell , digit ) , "candidate" , { c: cell , d: digit } );
   },
 
   erase() {
-    if ( this.canPlay() ) this.after( Game.erase( Game.selected ) );
+    if ( this.canPlay() ) this.after( Game.erase( Game.selected ) , "erase" , { c: Game.selected } );
   },
 
   undo() {
-    if ( this.canPlay() ) this.after( Game.undo() );
+    if ( this.canPlay() ) this.after( Game.undo() , "undo" );
   },
 
   setAuto( on ) {
-    if ( this.canPlay() ) this.after( Game.setAuto( on ) );
+    if ( this.features.auto_candidate === false ) return;
+    if ( this.canPlay() ) this.after( Game.setAuto( on ) , "auto" );
     else this.render();
   },
 
-  after( outcome ) {
+  // kind and detail describe the move for the play history (journal.js).
+  after( outcome , kind , detail ) {
     if ( !outcome || outcome.changed === false ) return;
+    if ( kind ) Journal.record( kind , detail );
     this.hintCells = null;
     // A move changes the board the hint was worked out from.
     Hint.close();
@@ -292,10 +368,11 @@ const Play = {
 
   onFinished( outcome ) {
     this.render();
-    SyncStore.addResult( Game.result( Generator.today() ) );
+    Journal.record( "finish" );
+    if ( this.temporary === false ) SyncStore.addResult( Game.result( Generator.today() ) );
     if ( outcome === "solved" ) {
       if ( Settings.get( "sound_on_solve" ) ) Sound.chime();
-      Menu.showSolved( Game );
+      Menu.showSolved( Game , this.features.hints );
     } else {
       this.toast( I18n.get( "game.revealed_notice" ) );
     }
@@ -321,14 +398,17 @@ const Play = {
     if ( name === "reset" ) return this.reset();
     if ( this.canPlay() === false ) return;
 
-    if ( name === "hint" ) return this.hint();
+    if ( name === "hint" ) return this.features.hints ? this.hint() : undefined;
     if ( name === "check_cell" ) {
-      const checked = Game.checkCell( Game.selected );
+      const cell = Game.selected;
+      const checked = Game.checkCell( cell );
+      Journal.record( "check_cell" , { c: cell < 0 ? undefined : cell , v: checked.verdict } );
       this.toast( I18n.get( "game.check_cell_" + checked.verdict ) );
       return this.afterQuiet( checked.changed );
     }
     if ( name === "check_puzzle" ) {
       const checked = Game.checkPuzzle();
+      Journal.record( "check_puzzle" , { n: checked.mistakes } );
       this.toast( checked.mistakes > 0
         ? I18n.format( "game.check_found_mistakes" , { count: checked.mistakes } )
         : I18n.get( "game.check_all_correct" ) );
@@ -336,10 +416,10 @@ const Play = {
     }
     if ( name === "reveal_cell" ) {
       if ( Game.selected < 0 ) return this.toast( I18n.get( "game.select_cell_first" ) );
-      return this.after( Game.revealCell( Game.selected ) );
+      return this.after( Game.revealCell( Game.selected ) , "reveal_cell" , { c: Game.selected } );
     }
     if ( name === "reveal_puzzle" ) {
-      if ( await Menu.confirm( "menu.confirm_reveal" , "menu.reveal_yes" ) ) this.after( Game.revealPuzzle() );
+      if ( await Menu.confirm( "menu.confirm_reveal" , "menu.reveal_yes" ) ) this.after( Game.revealPuzzle() , "reveal_puzzle" );
     }
   },
 
@@ -347,6 +427,7 @@ const Play = {
     if ( Game.meta === null || this.generating ) return;
     if ( await Menu.confirm( "menu.confirm_reset" , "menu.reset_yes" ) === false ) return;
     Game.reset();
+    Journal.record( "reset" , { state: Game.serialize() } );
     this.hintCells = null;
     Hint.close();
     this.manualPause = false;
@@ -369,41 +450,53 @@ const Play = {
   hint() {
     Game.addHint();
     this.hintCells = null;
+    this.hintTechnique = "";
     const level = Settings.level( "hint_level" );
     const mistake = Game.firstMistake();
     if ( mistake >= 0 ) {
       Game.markWrong( mistake );
       Game.selected = mistake;
       Hint.show( HintExplain.valueMistake( mistake ) , Math.max( level , 2 ) );
+      Journal.record( "hint" , { hk: "value_mistake" , c: mistake , lv: Math.max( level , 2 ) } );
       return this.afterQuiet( true );
     }
     const lost = Game.firstCandidateMistake();
     if ( lost !== null ) {
       Hint.show( HintExplain.candidateMistake( lost.cell , lost.digit ) , level );
+      Journal.record( "hint" , { hk: "candidate_mistake" , c: lost.cell , d: lost.digit , lv: level } );
       return this.afterQuiet( true );
     }
     const found = Engine.hintFrom( Game.values , Game.hintMasks() , Game.puzzle );
     if ( found === null ) {
       Hint.close();
+      Journal.record( "hint" , { hk: "none" } );
       this.toast( I18n.get( "hints.none" ) , 6000 );
       return this.afterQuiet( true );
     }
     if ( found.step.place ) Game.selected = found.step.cell;
     Hint.show( HintExplain.build( found.step , found.state , found.replayed ) , level );
+    this.hintTechnique = found.step.technique;
+    Journal.record( "hint" , {
+      hk: "technique" , tech: found.step.technique , lv: level,
+      c: found.step.place ? found.step.cell : undefined , d: found.step.place ? found.step.digit : undefined,
+    } );
     this.afterQuiet( true );
   },
 
   applyHint( action ) {
     if ( this.canPlay() === false ) return;
-    if ( action.kind === "eliminate" ) return this.after( Game.applyEliminations( action.eliminations ) );
-    if ( action.kind === "restore" ) return this.after( Game.restoreCandidate( action.cell , action.digit ) );
+    const detail = { ac: action.kind , tech: this.hintTechnique || undefined };
+    if ( action.kind === "eliminate" ) return this.after( Game.applyEliminations( action.eliminations ) , "hint_apply" , detail );
+    if ( action.kind === "restore" ) {
+      return this.after( Game.restoreCandidate( action.cell , action.digit ) , "hint_apply" , Object.assign( detail , { c: action.cell , d: action.digit } ) );
+    }
     if ( action.kind === "erase" ) {
       Game.selected = action.cell;
-      return this.after( Game.erase( action.cell ) );
+      return this.after( Game.erase( action.cell ) , "hint_apply" , Object.assign( detail , { c: action.cell } ) );
     }
     if ( action.kind === "place" ) {
       Game.selected = action.cell;
-      return this.after( Game.setValue( action.cell , action.digit , Settings.values ) );
+      return this.after( Game.setValue( action.cell , action.digit , Settings.values ) , "hint_apply" , Object.assign( detail , { c: action.cell , d: action.digit } ) );
     }
   },
 
@@ -418,9 +511,11 @@ const Play = {
     this.manualPause = !this.manualPause;
     if ( this.manualPause ) {
       Game.pauseClock();
+      Journal.record( "pause" );
       this.save( false );
     } else {
       Game.startClock();
+      Journal.record( "resume" );
     }
     this.render();
   },
@@ -431,16 +526,20 @@ const Play = {
     document.addEventListener( "visibilitychange" , function () {
       if ( document.hidden ) {
         Game.pauseClock();
+        Journal.record( "hidden" );
         Play.save( false );
         SyncStore.flush( true );
-      } else if ( Play.canPlay() ) {
-        Game.startClock();
+        Journal.flush( true );
+      } else {
+        if ( Play.canPlay() ) Game.startClock();
+        Journal.record( "visible" );
       }
     } );
     window.addEventListener( "pagehide" , function () {
       Game.pauseClock();
       Play.save( false );
       SyncStore.flush( true );
+      Journal.flush( true );
     } );
     window.setInterval( function () { Play.renderStatus(); } , 500 );
 
@@ -468,6 +567,7 @@ const Play = {
     Dom.show( Dom.get( "timer" ) , showTimer );
     if ( showTimer ) Dom.text( Dom.get( "timer-value" ) , Game.formatDuration( Game.elapsedMs() / 1000 ) );
     Dom.get( "pause-button" ).disabled = Game.playing() === false;
+    Dom.show( Dom.get( "temporary-badge" ) , this.temporary );
 
     Dom.show( Dom.get( "error-counter" ) , Settings.get( "show_error_counter" ) );
     Dom.text( Dom.get( "error-count" ) , String( Game.errors ) );
