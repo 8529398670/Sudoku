@@ -22,9 +22,8 @@ type csrfOnlyRequest struct {
 }
 
 type setFeaturesRequest struct {
-	Hints         *bool  `json:"hints"`
-	AutoCandidate *bool  `json:"auto_candidate"`
-	CSRFToken     string `json:"csrf_token"`
+	models.FeatureChange
+	CSRFToken string `json:"csrf_token"`
 }
 
 type setDisabledRequest struct {
@@ -171,8 +170,8 @@ func ( handlers *Handlers ) SetUserDisabled( c fiber.Ctx ) ( err error ) {
 	return
 }
 
-// SetUserFeatures switches Hints and Auto Candidate on or off for one
-// player. Their game page reads the result from /api/me on its next load.
+// SetUserFeatures switches Hints, Auto Candidate, Check and Reveal on or off
+// for one player. Their game page reads the result from /api/me on its next load.
 func ( handlers *Handlers ) SetUserFeatures( c fiber.Ctx ) ( err error ) {
 	var body setFeaturesRequest
 	if c.Bind().Body( &body ) != nil {
@@ -183,7 +182,7 @@ func ( handlers *Handlers ) SetUserFeatures( c fiber.Ctx ) ( err error ) {
 		err = forbidden( c , "invalid csrf token" )
 		return
 	}
-	if body.Hints == nil && body.AutoCandidate == nil {
+	if body.FeatureChange.Empty() {
 		err = badRequest( c , "nothing to change" )
 		return
 	}
@@ -197,7 +196,7 @@ func ( handlers *Handlers ) SetUserFeatures( c fiber.Ctx ) ( err error ) {
 		err = notFound( c , "no such user" )
 		return
 	}
-	if models.SetUserFeatures( handlers.Store , user_id , body.Hints , body.AutoCandidate ) != nil {
+	if models.SetUserFeatures( handlers.Store , user_id , &body.FeatureChange ) != nil {
 		err = serverError( c )
 		return
 	}

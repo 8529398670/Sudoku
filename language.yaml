@@ -64,6 +64,8 @@ admin:
   table_features: "Features"
   feature_hints: "Hints: {state}"
   feature_auto_candidate: "Auto Candidate: {state}"
+  feature_check: "Check: {state}"
+  feature_reveal: "Reveal: {state}"
   feature_on: "on"
   feature_off: "off"
   feature_turn_off: "Click to hide this from the player"
@@ -213,9 +215,17 @@ help:
   rules: "Fill the grid so that every row, every column, and every 3×3 box contains the numbers 1 to 9 exactly once."
   modes: "Normal mode places a number. Candidate mode pencils in small numbers that might fit -- press one again to remove it."
   auto: "Auto Candidate Mode fills in every possible candidate for you and keeps them up to date as you play. You can still cross candidates out."
-  menu: "Stuck? The ⋯ menu has a hint, checks, and reveals. A hint can be a gentle nudge or a full walkthrough of the technique on your own board -- pick how much it shows first in Settings. To practise one technique at a time, open Training (the target icon)."
-  # Shown instead of menu for a player whose hints an admin has switched off.
-  menu_no_hints: "Stuck? The ⋯ menu has checks and reveals. To practise one technique at a time, open Training (the target icon)."
+  # The paragraph about the ⋯ menu is put together from these, naming only
+  # what the player has: an admin can switch hints, checks and reveals off
+  # per player. Empty any one to leave it out.
+  menu_has: "Stuck? The ⋯ menu has {items}."
+  menu_item_hint: "a hint"
+  menu_item_check: "checks"
+  menu_item_reveal: "reveals"
+  menu_two: "{first} and {second}"
+  menu_three: "{first}, {second}, and {third}"
+  menu_hint_detail: "A hint can be a gentle nudge or a full walkthrough of the technique on your own board -- pick how much it shows first in Settings."
+  menu_training: "To practise one technique at a time, open Training (the target icon)."
   layout: "On a computer, drag the board's bottom-right corner to resize it (double-click it to reset), and the fullscreen button shows just the board and number pad. The address bar always links to the puzzle you are playing -- copy it to share."
   sync: "Your games are saved as you play. Sign in to pick them up on another device."
   keyboard_heading: "Keyboard"
@@ -255,6 +265,8 @@ hints:
   close: "Close hint"
   learn_more: "Learn more"
   none: "No logical step found from here. Try Check Puzzle -- something may be wrong."
+  # The same, for a player whose checks an admin has switched off.
+  none_no_check: "No logical step found from here. Something may be wrong -- look back over your numbers."
   replayed: "Some candidates are already gone because of an earlier {techniques} whose cells are now filled."
 
   # Building blocks for the sentences below.

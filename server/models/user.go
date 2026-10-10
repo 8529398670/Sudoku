@@ -34,6 +34,8 @@ type User struct {
 	// "off" so every existing record, and every new one, has them on.
 	HintsOff         bool `json:"hints_off,omitempty"`
 	AutoCandidateOff bool `json:"auto_candidate_off,omitempty"`
+	CheckOff         bool `json:"check_off,omitempty"`
+	RevealOff        bool `json:"reveal_off,omitempty"`
 }
 
 // Features is the game page's view of what this player may use. A
@@ -42,7 +44,23 @@ func ( user *User ) Features() ( features map[string]bool ) {
 	features = map[string]bool{
 		"hints":          user.HintsOff == false,
 		"auto_candidate": user.AutoCandidateOff == false,
+		"check":          user.CheckOff == false,
+		"reveal":         user.RevealOff == false,
 	}
+	return
+}
+
+// FeatureChange names the game features to switch on or off; a nil leaves
+// that feature as it is.
+type FeatureChange struct {
+	Hints         *bool `json:"hints"`
+	AutoCandidate *bool `json:"auto_candidate"`
+	Check         *bool `json:"check"`
+	Reveal        *bool `json:"reveal"`
+}
+
+func ( change *FeatureChange ) Empty() ( result bool ) {
+	result = change.Hints == nil && change.AutoCandidate == nil && change.Check == nil && change.Reveal == nil
 	return
 }
 
@@ -139,15 +157,16 @@ func SetUserDisabled( store *db.Store , user_id uint64 , disabled bool ) ( err e
 	return
 }
 
-// SetUserFeatures switches game features on or off for one player; a nil
-// leaves that feature as it is.
-func SetUserFeatures( store *db.Store , user_id uint64 , hints *bool , auto_candidate *bool ) ( err error ) {
+// SetUserFeatures switches game features on or off for one player.
+func SetUserFeatures( store *db.Store , user_id uint64 , change *FeatureChange ) ( err error ) {
 	err = store.UpdateValue( db.BucketUsers , encryption.Uint64ToBytes( user_id ) ,
 		func() any { return &User{} } ,
 		func( item any ) ( mutate_err error ) {
 			user := item.( *User )
-			if hints != nil { user.HintsOff = *hints == false }
-			if auto_candidate != nil { user.AutoCandidateOff = *auto_candidate == false }
+			if change.Hints != nil { user.HintsOff = *change.Hints == false }
+			if change.AutoCandidate != nil { user.AutoCandidateOff = *change.AutoCandidate == false }
+			if change.Check != nil { user.CheckOff = *change.Check == false }
+			if change.Reveal != nil { user.RevealOff = *change.Reveal == false }
 			return
 		} )
 	return

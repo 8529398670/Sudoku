@@ -16,10 +16,10 @@ const Play = {
   // played like any other, but never saved, synced, recorded, or counted.
   temporary: false,
   continueHash: "",
-  // What this player may use, from /api/me. An admin can switch either off
-  // per player; a switched-off feature is not drawn at all. Signed-out
-  // players have both.
-  features: { hints: true , auto_candidate: true },
+  // What this player may use, from /api/me. An admin can switch any of these
+  // off per player; a switched-off feature is not drawn at all. Signed-out
+  // players have them all.
+  features: { hints: true , auto_candidate: true , check: true , reveal: true },
 
   async init() {
     // The training ground is its own page; /train is the friendly address.
@@ -49,6 +49,8 @@ const Play = {
       this.features = {
         hints: me.features.hints !== false,
         auto_candidate: me.features.auto_candidate !== false,
+        check: me.features.check !== false,
+        reveal: me.features.reveal !== false,
       };
     }
     await SyncStore.load( me );
@@ -149,20 +151,63 @@ const Play = {
   // controls, its setting, and its mentions in Help. Only ever hides --
   // language.yaml may already have hidden some of these, and that stands.
   applyFeatures() {
+    const hideAction = function ( name ) {
+      Dom.show( document.querySelector( '#more-menu [data-action="' + name + '"]' ) , false );
+    };
     if ( this.features.hints === false ) {
       Hint.close();
-      Dom.show( document.querySelector( '#more-menu [data-action="hint"]' ) , false );
+      hideAction( "hint" );
       Dom.show( Dom.get( "hint-settings-heading" ) , false );
       Dom.show( Dom.get( "level-settings" ) , false );
       Dom.show( Dom.get( "help-key-hint" ) , false );
-      Dom.text( Dom.get( "help-menu" ) , I18n.get( "help.menu_no_hints" ) );
-      Dom.show( Dom.get( "help-menu" ) , I18n.get( "help.menu_no_hints" ) !== "" );
     }
     if ( this.features.auto_candidate === false ) {
       Dom.show( Dom.get( "auto-candidate-row" ) , false );
       Dom.show( Dom.get( "help-auto" ) , false );
       Settings.hide( "start_auto_candidate" );
     }
+    if ( this.features.check === false ) {
+      hideAction( "check_cell" );
+      hideAction( "check_puzzle" );
+      Settings.hide( "check_guesses" );
+    }
+    if ( this.features.reveal === false ) {
+      hideAction( "reveal_cell" );
+      hideAction( "reveal_puzzle" );
+    }
+    // With all of hint, check and reveal gone, the menu would open on a
+    // divider.
+    if ( this.features.hints === false && this.features.check === false && this.features.reveal === false ) {
+      Dom.show( document.querySelector( "#more-menu hr" ) , false );
+    }
+    this.renderHelpMenu();
+  },
+
+  // Help's paragraph about the ⋯ menu names only what this player has in it.
+  // With everything on it reads as one sentence from language.yaml would.
+  renderHelpMenu() {
+    const items = [];
+    if ( this.features.hints ) items.push( I18n.get( "help.menu_item_hint" ) );
+    if ( this.features.check ) items.push( I18n.get( "help.menu_item_check" ) );
+    if ( this.features.reveal ) items.push( I18n.get( "help.menu_item_reveal" ) );
+    const named = items.filter( function ( item ) { return item !== ""; } );
+    let list = named[ 0 ] || "";
+    if ( named.length === 2 ) list = I18n.format( "help.menu_two" , { first: named[ 0 ] , second: named[ 1 ] } );
+    if ( named.length === 3 ) list = I18n.format( "help.menu_three" , { first: named[ 0 ] , second: named[ 1 ] , third: named[ 2 ] } );
+    const sentences = [
+      list === "" ? "" : I18n.format( "help.menu_has" , { items: list } ),
+      this.features.hints ? I18n.get( "help.menu_hint_detail" ) : "",
+      I18n.get( "help.menu_training" ),
+    ].filter( function ( sentence ) { return sentence !== ""; } );
+    Dom.text( Dom.get( "help-menu" ) , sentences.join( " " ) );
+    Dom.show( Dom.get( "help-menu" ) , sentences.length > 0 );
+  },
+
+  // The settings Game.setValue sees: with checks switched off, a guess is
+  // never checked, whatever check_guesses was saved as.
+  placeSettings() {
+    if ( this.features.check ) return Settings.values;
+    return Object.assign( {} , Settings.values , { check_guesses: false } );
   },
 
   startsAuto() {
@@ -332,7 +377,7 @@ const Play = {
     let mode = this.mode;
     if ( swapMode ) mode = mode === "normal" ? "candidate" : "normal";
     const cell = Game.selected;
-    if ( mode === "normal" ) this.after( Game.setValue( cell , digit , Settings.values ) , "place" , { c: cell , d: digit } );
+    if ( mode === "normal" ) this.after( Game.setValue( cell , digit , this.placeSettings() ) , "place" , { c: cell , d: digit } );
     else this.after( Game.toggleCandidate( cell , digit ) , "candidate" , { c: cell , d: digit } );
   },
 
@@ -399,6 +444,8 @@ const Play = {
     if ( this.canPlay() === false ) return;
 
     if ( name === "hint" ) return this.features.hints ? this.hint() : undefined;
+    if ( ( name === "check_cell" || name === "check_puzzle" ) && this.features.check === false ) return;
+    if ( ( name === "reveal_cell" || name === "reveal_puzzle" ) && this.features.reveal === false ) return;
     if ( name === "check_cell" ) {
       const cell = Game.selected;
       const checked = Game.checkCell( cell );
@@ -470,7 +517,7 @@ const Play = {
     if ( found === null ) {
       Hint.close();
       Journal.record( "hint" , { hk: "none" } );
-      this.toast( I18n.get( "hints.none" ) , 6000 );
+      this.toast( I18n.get( this.features.check ? "hints.none" : "hints.none_no_check" ) , 6000 );
       return this.afterQuiet( true );
     }
     if ( found.step.place ) Game.selected = found.step.cell;
@@ -496,7 +543,7 @@ const Play = {
     }
     if ( action.kind === "place" ) {
       Game.selected = action.cell;
-      return this.after( Game.setValue( action.cell , action.digit , Settings.values ) , "hint_apply" , Object.assign( detail , { c: action.cell , d: action.digit } ) );
+      return this.after( Game.setValue( action.cell , action.digit , this.placeSettings() ) , "hint_apply" , Object.assign( detail , { c: action.cell , d: action.digit } ) );
     }
   },
 

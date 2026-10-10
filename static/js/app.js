@@ -210,6 +210,8 @@ const App = {
           Dom.el( "div" , { class: "row-actions" , children: [
             featureButton( "hints" , "admin.feature_hints" ),
             featureButton( "auto_candidate" , "admin.feature_auto_candidate" ),
+            featureButton( "check" , "admin.feature_check" ),
+            featureButton( "reveal" , "admin.feature_reveal" ),
           ] } ),
         ] } ),
         Dom.el( "td" , { children: [
